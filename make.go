@@ -8,8 +8,7 @@ import (
 const MakeRemark = `web-shell Project Build Tool
 	make gen
 	make build
-	make clean
-	make publish`
+	make clean`
 
 func gen() {
 
@@ -23,10 +22,6 @@ func clean() {
 
 }
 
-func publish() {
-
-}
-
 func main() {
 	(func() func() {
 		if len(os.Args) < 2 {
@@ -34,12 +29,12 @@ func main() {
 			os.Exit(1)
 		}
 		switch os.Args[1] {
+		case "gen":
+			return gen
 		case "build":
 			return build
 		case "clean":
 			return clean
-		case "publish":
-			return publish
 		default:
 			return func() {
 				fmt.Println(MakeRemark)
