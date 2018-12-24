@@ -24,3 +24,6 @@ target/
 
 # Golang mod
 go.sum
+
+# web-shell
+static_gen.go
