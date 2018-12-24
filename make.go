@@ -14,6 +14,13 @@ const MakeRemark = `web-shell Project Build Tool
 
 const GEN_GO_FILE = "static_gen.go"
 
+var static_file = map[string]string{
+	"index.js":      "html/index.js",
+	"index.css":     "html/index.css",
+	"xterm.min.js":  "https://cdn.bootcss.com/xterm/3.9.1/xterm.min.js",
+	"xterm.min.css": "https://cdn.bootcss.com/xterm/3.9.1/xterm.min.css",
+}
+
 func gen() {
 
 }
