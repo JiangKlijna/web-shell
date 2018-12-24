@@ -3,12 +3,15 @@ package main
 import (
 	"fmt"
 	"os"
+	"os/exec"
 )
 
 const MakeRemark = `web-shell Project Build Tool
 	make gen
 	make build
 	make clean`
+
+const GEN_GO_FILE = "static_gen.go"
 
 func gen() {
 
@@ -19,7 +22,9 @@ func build() {
 }
 
 func clean() {
-
+	cmd := exec.Command("go", "clean")
+	cmd.CombinedOutput()
+	os.Remove(GEN_GO_FILE)
 }
 
 func main() {
