@@ -7,6 +7,7 @@ import (
 )
 
 const MakeRemark = `web-shell Project Build Tool
+	make run
 	make gen
 	make build
 	make clean`
@@ -19,6 +20,10 @@ func gen() {
 
 func build() {
 	gen()
+}
+
+func run() {
+	build()
 }
 
 func clean() {
@@ -34,6 +39,8 @@ func main() {
 			os.Exit(1)
 		}
 		switch os.Args[1] {
+		case "run":
+			return run
 		case "gen":
 			return gen
 		case "build":
