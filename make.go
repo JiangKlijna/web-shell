@@ -12,11 +12,13 @@ const MakeRemark = `web-shell Project Build Tool
 	make build
 	make clean`
 
-const GEN_GO_FILE = "static_gen.go"
+const gen_go_file = "static_gen.go"
 
-var static_file = map[string]string{
-	"index.js":      "html/index.js",
-	"index.css":     "html/index.css",
+const static_dir = "html"
+
+var static_file = []string{"index.js", "index.css", "xterm.min.js", "xterm.min.css",}
+
+var xterm_file = map[string]string{
 	"xterm.min.js":  "https://cdn.bootcss.com/xterm/3.9.1/xterm.min.js",
 	"xterm.min.css": "https://cdn.bootcss.com/xterm/3.9.1/xterm.min.css",
 }
@@ -36,7 +38,7 @@ func run() {
 func clean() {
 	cmd := exec.Command("go", "clean")
 	cmd.CombinedOutput()
-	os.Remove(GEN_GO_FILE)
+	os.Remove(gen_go_file)
 }
 
 func main() {
