@@ -7,6 +7,7 @@ import (
 )
 
 const MakeRemark = `web-shell Project Build Tool
+	make down
 	make run
 	make gen
 	make build
@@ -23,8 +24,12 @@ var xterm_file = map[string]string{
 	"xterm.min.css": "https://cdn.bootcss.com/xterm/3.9.1/xterm.min.css",
 }
 
-func gen() {
+func down() {
 
+}
+
+func gen() {
+	down()
 }
 
 func build() {
@@ -48,6 +53,8 @@ func main() {
 			os.Exit(1)
 		}
 		switch os.Args[1] {
+		case "down":
+			return down
 		case "run":
 			return run
 		case "gen":
