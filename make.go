@@ -7,11 +7,14 @@ import (
 )
 
 const MakeRemark = `web-shell Project Build Tool
-	make down
-	make run
-	make gen
-	make build
-	make clean`
+usage:
+	make down		Download static resources
+	make gen		Generate go file by static resources
+	make build		Compile and generate executable files
+	make run		Run web-shell
+	make debug		Debug web-shell
+	make clean		Clean tmp files
+`
 
 const gen_go_file = "static_gen.go"
 
