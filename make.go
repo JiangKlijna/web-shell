@@ -2,6 +2,8 @@ package main
 
 import (
 	"fmt"
+	"io/ioutil"
+	"net/http"
 	"os"
 	"os/exec"
 )
@@ -27,8 +29,39 @@ var xterm_file = map[string]string{
 	"xterm.min.css": "https://cdn.bootcss.com/xterm/3.9.1/xterm.min.css",
 }
 
+// Download static resources
 func down() {
-
+	get := func(url string) ([]byte, error) {
+		res, err := http.Get(url)
+		defer res.Body.Close()
+		if err != nil {
+			return nil, err
+		}
+		return ioutil.ReadAll(res.Body)
+	}
+	fileExists := func(path string) bool {
+		if stat, err := os.Stat(path); err == nil {
+			return !stat.IsDir()
+		}
+		return false
+	}
+	for name, url := range xterm_file {
+		filename := static_dir + "/" + name
+		exist := fileExists(filename)
+		if exist {
+			fmt.Println(filename + " already exist")
+			continue
+		}
+		data, err := get(url)
+		if err != nil {
+			panic(err)
+		}
+		err = ioutil.WriteFile(filename, data, 0664)
+		if err != nil {
+			panic(err)
+		}
+		fmt.Println(filename + " download successful")
+	}
 }
 
 func gen() {
