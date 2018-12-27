@@ -76,6 +76,10 @@ func run() {
 	build()
 }
 
+func debug() {
+
+}
+
 func clean() {
 	cmd := exec.Command("go", "clean")
 	cmd.CombinedOutput()
@@ -89,10 +93,12 @@ func main() {
 			os.Exit(1)
 		}
 		switch os.Args[1] {
-		case "down":
-			return down
 		case "run":
 			return run
+		case "debug":
+			return debug
+		case "down":
+			return down
 		case "gen":
 			return gen
 		case "build":
