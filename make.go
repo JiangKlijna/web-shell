@@ -33,10 +33,10 @@ var xterm_file = map[string]string{
 func down() {
 	get := func(url string) ([]byte, error) {
 		res, err := http.Get(url)
-		defer res.Body.Close()
 		if err != nil {
 			return nil, err
 		}
+		defer res.Body.Close()
 		return ioutil.ReadAll(res.Body)
 	}
 	fileExists := func(path string) bool {
