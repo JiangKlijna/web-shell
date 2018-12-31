@@ -7,10 +7,13 @@ type Application struct {
 	paras *Parameter
 }
 
+func NewApp() *Application {
+	return &Application{http.NewServeMux(), &Parameter{}}
+}
+
 // Init App
 func (app *Application) Init() {
-	app.mux = NewServeMux()
-	app.paras = NewParameter()
+	
 }
 
 // Start App
@@ -19,7 +22,7 @@ func (app *Application) Run() {
 }
 
 func main() {
-	app := &Application{}
+	app := NewApp()
 	app.Init()
 	app.Run()
 }
