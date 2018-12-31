@@ -1,12 +1,11 @@
 package main
 
 type Parameter struct {
-	Port int
+	Port     int
 	Username string
 	Password string
 }
 
-func NewParameter() *Parameter {
-	return nil
-}
+func (paras *Parameter) Init() {
 
+}

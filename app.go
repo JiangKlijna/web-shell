@@ -7,13 +7,14 @@ type Application struct {
 	paras *Parameter
 }
 
+// New Application
 func NewApp() *Application {
 	return &Application{http.NewServeMux(), &Parameter{}}
 }
 
 // Init App
 func (app *Application) Init() {
-	
+
 }
 
 // Start App
