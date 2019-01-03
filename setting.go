@@ -2,8 +2,6 @@ package main
 
 import (
 	"flag"
-	"fmt"
-	"os"
 )
 
 type Parameter struct {
@@ -33,15 +31,12 @@ func (paras *Parameter) Init() {
 }
 
 func usage() {
-	fmt.Fprintf(os.Stderr, `Usage: web-shell [-P port] [-u username] [-p password]
+	println(`Usage: web-shell [-P port] [-u username] [-p password]
 Example: web-shell -P 2019 -u admin -p admin
 
-Options:
-`)
+Options:`)
 }
 
 func printVersion() {
-	os.Stderr.WriteString("web-shell version: ")
-	os.Stderr.WriteString(Version)
-	os.Stderr.WriteString("\n")
+	println("web-shell version:", Version)
 }
