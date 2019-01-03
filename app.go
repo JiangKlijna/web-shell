@@ -4,9 +4,11 @@ import "net/http"
 
 const Version = "0.1"
 
+var app *Application
+
 type Application struct {
-	mux   ShellServer
-	paras *Parameter
+	server ShellServer
+	paras  *Parameter
 }
 
 // New Application
@@ -24,8 +26,11 @@ func (app *Application) Run() {
 
 }
 
+func init() {
+	app = NewApp()
+}
+
 func main() {
-	app := NewApp()
 	app.Init()
 	app.Run()
 }
