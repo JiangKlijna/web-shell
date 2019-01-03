@@ -1,7 +1,5 @@
 package main
 
-import "net/http"
-
 const Version = "0.1"
 
 var app *Application
@@ -13,7 +11,7 @@ type Application struct {
 
 // New Application
 func NewApp() *Application {
-	return &Application{ShellServer(http.NewServeMux()), &Parameter{}}
+	return &Application{NewShellServer(), &Parameter{}}
 }
 
 // Init App
