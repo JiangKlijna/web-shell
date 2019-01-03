@@ -2,8 +2,12 @@ package main
 
 import "net/http"
 
-type ShellServer *http.ServeMux
+type ShellServer http.ServeMux
 
-func NewShellServer() ShellServer {
-	return http.NewServeMux()
+func NewShellServer() *ShellServer {
+	return (*ShellServer)(http.NewServeMux())
+}
+
+func (s ShellServer) Init() {
+
 }

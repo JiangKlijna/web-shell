@@ -5,7 +5,7 @@ const Version = "0.1"
 var app *Application
 
 type Application struct {
-	server ShellServer
+	server *ShellServer
 	paras  *Parameter
 }
 
