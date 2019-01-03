@@ -5,13 +5,13 @@ import "net/http"
 const Version = "0.1"
 
 type Application struct {
-	mux   *http.ServeMux
+	mux   ShellServer
 	paras *Parameter
 }
 
 // New Application
 func NewApp() *Application {
-	return &Application{http.NewServeMux(), &Parameter{}}
+	return &Application{ShellServer(http.NewServeMux()), &Parameter{}}
 }
 
 // Init App
