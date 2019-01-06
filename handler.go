@@ -38,9 +38,11 @@ func AuthHandler(username, password string, next http.Handler) http.Handler {
 			io.WriteString(w, "Type Error!\n")
 			return
 		}
-		if username == userPwd[0] && password == userPwd[1] {
-			next.ServeHTTP(w, r)
+		if username != userPwd[0] || password != userPwd[1] {
+			io.WriteString(w, "Wrong username or password!\n")
+			return
 		}
+		next.ServeHTTP(w, r)
 	})
 }
 
