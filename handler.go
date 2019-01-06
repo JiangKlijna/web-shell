@@ -2,9 +2,11 @@ package main
 
 import (
 	"encoding/base64"
+	"fmt"
 	"io"
 	"net/http"
 	"strings"
+	"time"
 )
 
 func AuthHandler(username, password string, next http.Handler) http.Handler {
@@ -39,5 +41,20 @@ func AuthHandler(username, password string, next http.Handler) http.Handler {
 		if username == userPwd[0] && password == userPwd[1] {
 			next.ServeHTTP(w, r)
 		}
+	})
+}
+
+func LoggingHandler(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		start := time.Now()
+		next.ServeHTTP(w, r)
+		str := fmt.Sprintf(
+			"%s Comleted %s %s in %v from %s",
+			start.Format("2006-01-02 15:04:05"),
+			r.Method,
+			r.URL.Path,
+			time.Since(start),
+			r.RemoteAddr)
+		go fmt.Println(str)
 	})
 }
