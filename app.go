@@ -17,11 +17,7 @@ func NewApp() *Application {
 // Init App
 func (app *Application) Init() {
 	app.paras.Init()
-}
-
-// Start App
-func (app *Application) Run() {
-
+	app.server.Init(app.paras)
 }
 
 func init() {
@@ -30,5 +26,5 @@ func init() {
 
 func main() {
 	app.Init()
-	app.Run()
+	app.server.Run(app.paras)
 }
