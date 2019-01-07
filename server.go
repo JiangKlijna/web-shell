@@ -2,10 +2,12 @@ package main
 
 import "net/http"
 
-type ShellServer http.ServeMux
+type ShellServer struct {
+	http.ServeMux
+}
 
 func NewShellServer() *ShellServer {
-	return (*ShellServer)(http.NewServeMux())
+	return new(ShellServer)
 }
 
 func (s ShellServer) Init() {
