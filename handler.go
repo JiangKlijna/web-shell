@@ -53,7 +53,8 @@ func AuthHandler(username, password string, next http.Handler) http.Handler {
 			return
 		}
 		if username != userPwd[0] || password != userPwd[1] {
-			io.WriteString(w, "Wrong username or password!\n")
+			w.Header().Set("WWW-Authenticate", `Basic realm="Dotcoo User Login"`)
+			w.WriteHeader(http.StatusUnauthorized)
 			return
 		}
 		next.ServeHTTP(w, r)
