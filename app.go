@@ -1,6 +1,7 @@
 package main
 
 const Version = "0.1"
+const Server = "web-shell-" + Version
 
 var app *Application
 

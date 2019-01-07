@@ -25,6 +25,7 @@ func GetMethodHandler(next http.Handler) http.Handler {
 
 func AuthHandler(username, password string, next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Add("Server", Server)
 		auth := r.Header.Get("Authorization")
 		if auth == "" {
 			w.Header().Set("WWW-Authenticate", `Basic realm="Dotcoo User Login"`)
