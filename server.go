@@ -1,6 +1,7 @@
 package main
 
 import (
+	"log"
 	"net/http"
 	"strconv"
 )
@@ -18,5 +19,8 @@ func (s *ShellServer) Init(paras *Parameter) {
 }
 
 func (s *ShellServer) Run(paras *Parameter) {
-	http.ListenAndServe(":"+strconv.Itoa(paras.Port), s)
+	err := http.ListenAndServe(":"+strconv.Itoa(paras.Port), s)
+	if err != nil {
+		log.Fatal(err)
+	}
 }
