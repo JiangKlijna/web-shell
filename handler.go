@@ -4,13 +4,23 @@ import (
 	"encoding/base64"
 	"fmt"
 	"io"
+	"mime"
 	"net/http"
+	"path/filepath"
 	"strings"
 	"time"
 )
 
 func HtmlDirHandler() http.Handler {
 	return http.FileServer(http.Dir("html"))
+}
+
+func MimeHandler(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		ctype := mime.TypeByExtension(filepath.Ext(r.RequestURI))
+		w.Header().Set("Content-Type", ctype)
+		next.ServeHTTP(w, r)
+	})
 }
 
 func GetMethodHandler(next http.Handler) http.Handler {

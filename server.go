@@ -19,6 +19,8 @@ var StaticHandler http.Handler
 func (s *ShellServer) Init(paras *Parameter) {
 	if StaticHandler == nil {
 		StaticHandler = HtmlDirHandler()
+	} else {
+		StaticHandler = MimeHandler(StaticHandler)
 	}
 	s.Handle("/", LoggingHandler(GetMethodHandler(AuthHandler(paras.Username, paras.Password, StaticHandler))))
 }
