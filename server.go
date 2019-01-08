@@ -14,8 +14,13 @@ func NewShellServer() *ShellServer {
 	return new(ShellServer)
 }
 
+var StaticHandler http.Handler
+
 func (s *ShellServer) Init(paras *Parameter) {
-	s.Handle("/", LoggingHandler(GetMethodHandler(AuthHandler(paras.Username, paras.Password, HtmlHandler()))))
+	if StaticHandler == nil {
+		StaticHandler = HtmlDirHandler()
+	}
+	s.Handle("/", LoggingHandler(GetMethodHandler(AuthHandler(paras.Username, paras.Password, StaticHandler))))
 }
 
 func (s *ShellServer) Run(paras *Parameter) {

@@ -9,7 +9,7 @@ import (
 	"time"
 )
 
-func HtmlHandler() http.Handler {
+func HtmlDirHandler() http.Handler {
 	return http.FileServer(http.Dir("html"))
 }
 
