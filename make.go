@@ -1,11 +1,13 @@
 package main
 
 import (
+	"bytes"
 	"fmt"
 	"io/ioutil"
 	"net/http"
 	"os"
 	"os/exec"
+	"strconv"
 )
 
 const MakeRemark = `web-shell Project Build Tool
@@ -22,7 +24,13 @@ const gen_go_file = "static_gen.go"
 
 const static_dir = "html"
 
-var static_file = []string{"index.js", "index.css", "xterm.min.js", "xterm.min.css",}
+var static_file = map[string]string{
+	"index.html":    "/",
+	"index.js":      "/index.js",
+	"index.css":     "/index.css",
+	"xterm.min.js":  "/xterm.min.js",
+	"xterm.min.css": "/xterm.min.css",
+}
 
 var xterm_file = map[string]string{
 	"xterm.min.js":  "https://cdn.bootcss.com/xterm/3.9.1/xterm.min.js",
@@ -64,8 +72,41 @@ func down() {
 	}
 }
 
+// generate gen_go_file
 func gen() {
 	down()
+	buf := bytes.Buffer{}
+	buf.WriteString(`package main
+import "net/http"
+func init() {
+	StaticHandler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if data, ok := R[r.RequestURI]; ok {
+			w.Write(data)
+		} else {
+			http.Error(w, "File not Found", http.StatusNotFound)
+		}
+	})
+}
+var R = map[string][]byte{`)
+	for filename, path := range static_file {
+		bs, err := ioutil.ReadFile(static_dir + "/" + filename)
+		if err != nil {
+			panic(err)
+		}
+		buf.WriteString("\n\t\"" + path)
+		buf.WriteString(`":  []byte{`)
+		for _, b := range bs {
+			buf.WriteString(strconv.Itoa(int(b)))
+			buf.WriteString(",")
+		}
+		buf.WriteString("},")
+		fmt.Println(filename + " generate successful")
+	}
+	buf.WriteString("\n}")
+	err := ioutil.WriteFile(gen_go_file, buf.Bytes(), 0662)
+	if err != nil {
+		panic(err)
+	}
 }
 
 func build() {
@@ -81,8 +122,7 @@ func debug() {
 }
 
 func clean() {
-	cmd := exec.Command("go", "clean")
-	cmd.CombinedOutput()
+	exec.Command("go", "clean").CombinedOutput()
 	os.Remove(gen_go_file)
 }
 

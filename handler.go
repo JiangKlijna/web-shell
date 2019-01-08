@@ -17,7 +17,13 @@ func HtmlDirHandler() http.Handler {
 
 func MimeHandler(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		ctype := mime.TypeByExtension(filepath.Ext(r.RequestURI))
+		var filext string
+		if strings.HasSuffix(r.RequestURI, "/") {
+			filext = ".html"
+		} else {
+			filext = filepath.Ext(r.RequestURI)
+		}
+		ctype := mime.TypeByExtension(filext)
 		w.Header().Set("Content-Type", ctype)
 		next.ServeHTTP(w, r)
 	})
