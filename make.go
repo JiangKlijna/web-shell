@@ -160,6 +160,7 @@ func invoke(sh ...string) {
 func run() {
 	gen()
 	build()
+	invoke("app")
 }
 
 // clean -> down -> build
@@ -167,6 +168,7 @@ func debug() {
 	clean()
 	down()
 	build()
+	invoke("app")
 }
 
 func clean() {
