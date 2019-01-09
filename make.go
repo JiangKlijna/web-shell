@@ -24,6 +24,8 @@ const gen_go_file = "static_gen.go"
 
 const static_dir = "html"
 
+var go_file = []string{"app.go", "setting.go", "server.go", "handler.go"}
+
 var static_file = map[string]string{
 	"index.html":    "/",
 	"index.js":      "/index.js",
@@ -109,16 +111,29 @@ var R = map[string][]byte{`)
 	}
 }
 
+// Compile and Generate executable file
 func build() {
-	gen()
+	(func(exist bool) {
+
+	})((func(path string) bool {
+		if stat, err := os.Stat(path); err == nil {
+			return !stat.IsDir()
+		}
+		return false
+	})(gen_go_file))
 }
 
+// down -> gen -> build
 func run() {
+	gen()
 	build()
 }
 
+// clean -> down -> build
 func debug() {
-
+	clean()
+	down()
+	build()
 }
 
 func clean() {
