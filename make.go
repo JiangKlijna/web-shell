@@ -114,7 +114,16 @@ var R = map[string][]byte{`)
 // Compile and Generate executable file
 func build() {
 	(func(exist bool) {
-
+		ps := append([]string{"build"}, go_file...)
+		if exist {
+			ps = append(ps, gen_go_file)
+		}
+		_, err := exec.Command("go", ps...).CombinedOutput()
+		if err != nil {
+			fmt.Println("web-shell build error")
+		} else {
+			fmt.Println("web-shell build successful")
+		}
 	})((func(path string) bool {
 		if stat, err := os.Stat(path); err == nil {
 			return !stat.IsDir()
