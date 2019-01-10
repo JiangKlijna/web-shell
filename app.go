@@ -3,8 +3,6 @@ package main
 const Version = "0.1"
 const Server = "web-shell-" + Version
 
-var app *Application
-
 type Application struct {
 	server *ShellServer
 	paras  *Parameter
@@ -12,7 +10,7 @@ type Application struct {
 
 // New Application
 func NewApp() *Application {
-	return &Application{NewShellServer(), &Parameter{}}
+	return &Application{NewShellServer(), new(Parameter)}
 }
 
 // Init App
@@ -21,11 +19,8 @@ func (app *Application) Init() {
 	app.server.Init(app.paras)
 }
 
-func init() {
-	app = NewApp()
-}
-
 func main() {
+	app := NewApp()
 	app.Init()
 	app.server.Run(app.paras)
 }
