@@ -10,7 +10,7 @@ type Application struct {
 
 // New Application
 func NewApp() *Application {
-	return &Application{NewShellServer(), new(Parameter)}
+	return &Application{new(ShellServer), new(Parameter)}
 }
 
 // Init App

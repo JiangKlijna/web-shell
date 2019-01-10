@@ -10,12 +10,10 @@ type ShellServer struct {
 	http.ServeMux
 }
 
-func NewShellServer() *ShellServer {
-	return new(ShellServer)
-}
-
+// reserved for static_gen.go
 var StaticHandler http.Handler
 
+// register handlers
 func (s *ShellServer) Init(paras *Parameter) {
 	if StaticHandler == nil {
 		StaticHandler = HtmlDirHandler()
@@ -27,7 +25,7 @@ func (s *ShellServer) Init(paras *Parameter) {
 
 // packaging and upgrading http.Handler
 func (s *ShellServer) upgrade(paras *Parameter, h http.Handler) http.Handler {
-	return LoggingHandler(GetMethodHandler(AuthHandler(paras.Username, paras.Password, StaticHandler)))
+	return LoggingHandler(GetMethodHandler(AuthHandler(paras.Username, paras.Password, h)))
 }
 
 // run web-shell server
