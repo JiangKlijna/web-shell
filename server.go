@@ -21,6 +21,7 @@ func (s *ShellServer) Init(paras *Parameter) {
 		StaticHandler = MimeHandler(StaticHandler)
 	}
 	s.Handle("/", s.upgrade(paras, StaticHandler))
+	s.Handle("/ws", s.upgrade(paras, http.HandlerFunc(WebsocketHandler)))
 }
 
 // packaging and upgrading http.Handler
