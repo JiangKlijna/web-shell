@@ -26,7 +26,7 @@ const gen_go_file = "static_gen.go"
 
 const static_dir = "html"
 
-var go_file = []string{"app.go", "setting.go", "server.go", "handler.go"}
+var go_file = []string{"app.go", "setting.go", "server.go", "handler.go", "websocket.go"}
 
 var static_file = map[string]string{
 	"index.html":    "/",
