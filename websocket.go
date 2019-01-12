@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"github.com/axgle/mahonia"
 	"github.com/gorilla/websocket"
 	"io"
@@ -25,32 +26,31 @@ func execute(sh string, rw io.ReadWriter, down chan error) {
 
 type WebSocketIO websocket.Conn
 
-func (io *WebSocketIO) Write(p []byte) (n int, err error) {
+func (io *WebSocketIO) Write(p []byte) (int, error) {
 	ws := (*websocket.Conn)(io)
 	data := mahonia.NewDecoder("gbk").ConvertString(string(p))
 	d := []byte(data)
 	return len(d), ws.WriteMessage(websocket.TextMessage, d)
 }
 
-func (io *WebSocketIO) Read(p []byte) (n int, err error) {
+func (io *WebSocketIO) Read(p []byte) (int, error) {
 	//return os.Stdin.Read(p)
 	ws := (*websocket.Conn)(io)
 	_, data, err := ws.ReadMessage()
 	if err != nil {
 		return 0, err
 	}
+	fmt.Print(string(data))
 	for i, b := range data {
 		p[i] = b
 	}
 	return len(data), nil
 }
 
-var (
-	upgrader = websocket.Upgrader{
-		ReadBufferSize:  1024,
-		WriteBufferSize: 1024,
-	}
-)
+var upgrader = websocket.Upgrader{
+	ReadBufferSize:  1024,
+	WriteBufferSize: 1024,
+}
 
 func WebsocketHandler(w http.ResponseWriter, r *http.Request) {
 	ws, err := upgrader.Upgrade(w, r, nil)

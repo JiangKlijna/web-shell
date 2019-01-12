@@ -4,18 +4,19 @@ window.term = (function () {
     var term = new Terminal();
     term.open(term_dom);
 
-    term.write('Hello from \x1B[1;3;31mxterm.js\x1B[0m $ ');
+    term.write('Hello from \x1B[1;3;31web-shell\x1B[0m $ ');
 
     var buf = [];
     term.on("key", function (c, e) {
-        buf.push(c);
-        term.write(c);
         if (e.key === "Enter") {
-            var line = buf.join('');
+            var line = buf.join('')+"\n";
             buf = [];
             console.log(line);
             conn.send(line);
             term.writeln('');
+        } else {
+            buf.push(c);
+            term.write(c);
         }
     });
     return term;
@@ -28,7 +29,7 @@ window.conn = (function () {
         term.writeln("connection closed.");
     };
     conn.onmessage = function (e) {
-        term.writeln(e.data);
+        term.write(e.data);
     };
     return conn;
 })();
@@ -65,5 +66,6 @@ window.fit = (function () {
             term._core.renderer.clear();
             term.resize(geometry.cols, geometry.rows);
         }
-    }
+    };
+    window.onresize();
 })();
