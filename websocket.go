@@ -10,18 +10,16 @@ import (
 	"os/exec"
 )
 
-func execute(sh string, rw io.ReadWriter, down chan error) {
+func execute(sh string, rw io.ReadWriter) error {
 	cmd := exec.Command(sh)
 	cmd.Stdin = rw
 	cmd.Stdout = rw
 	cmd.Stderr = rw
-
 	err := cmd.Start()
 	if err != nil {
-		down <- err
-		return
+		return err
 	}
-	down <- cmd.Wait()
+	return cmd.Wait()
 }
 
 type WebSocketIO websocket.Conn
@@ -59,7 +57,10 @@ func WebsocketHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	defer ws.Close()
-	done := make(chan error)
 	wsio := (*WebSocketIO)(ws)
-	execute("cmd", wsio, done)
+	err = execute("cmd", wsio)
+	if err != nil {
+		log.Println(err)
+		return
+	}
 }
