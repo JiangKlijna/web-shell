@@ -2,10 +2,12 @@ package main
 
 import (
 	"flag"
+	"os"
+	"strconv"
 )
 
 type Parameter struct {
-	Port     int
+	Port     string
 	Username string
 	Password string
 }
@@ -16,7 +18,7 @@ func (paras *Parameter) Init() {
 	)
 	flag.BoolVar(&help, "h", false, "this help")
 	flag.BoolVar(&version, "v", false, "show version and exit")
-	paras.Port = *flag.Int("P", 2019, "listening port")
+	paras.Port = strconv.Itoa(*flag.Int("P", 2019, "listening port"))
 	paras.Username = *flag.String("u", "admin", "username")
 	paras.Password = *flag.String("p", "admin", "password")
 	flag.Parse()
@@ -25,8 +27,10 @@ func (paras *Parameter) Init() {
 		printVersion()
 		flag.Usage()
 		flag.PrintDefaults()
+		os.Exit(1)
 	} else if version {
 		printVersion()
+		os.Exit(1)
 	}
 }
 

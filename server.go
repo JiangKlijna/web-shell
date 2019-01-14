@@ -3,7 +3,6 @@ package main
 import (
 	"log"
 	"net/http"
-	"strconv"
 )
 
 type ShellServer struct {
@@ -31,7 +30,7 @@ func (s *ShellServer) upgrade(paras *Parameter, h http.Handler) http.Handler {
 
 // run web-shell server
 func (s *ShellServer) Run(paras *Parameter) {
-	err := http.ListenAndServe(":"+strconv.Itoa(paras.Port), s)
+	err := http.ListenAndServe(":"+paras.Port, s)
 	if err != nil {
 		log.Fatal(err)
 	}
