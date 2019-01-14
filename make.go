@@ -1,10 +1,8 @@
 package main
 
 import (
-	"bufio"
 	"bytes"
 	"fmt"
-	"io"
 	"io/ioutil"
 	"net/http"
 	"os"
@@ -138,22 +136,10 @@ func invoke(sh ...string) {
 	//CombinedOutput
 	cmd := exec.Command(sh[0], sh[1:]...)
 	fmt.Println(sh)
-	stdout, err := cmd.StdoutPipe()
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
-	cmd.Start()
-	reader := bufio.NewReader(stdout)
-	for {
-		line, err2 := reader.ReadString('\n')
-		if err2 != nil || io.EOF == err2 {
-			break
-		}
-		fmt.Print(line)
-	}
-	fmt.Println()
-	cmd.Wait()
+	//cmd.Stdin = os.Stdin
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	cmd.Run()
 }
 
 // down -> gen -> build
@@ -172,7 +158,7 @@ func debug() {
 }
 
 func clean() {
-	exec.Command("go", "clean").CombinedOutput()
+	invoke("go", "clean")
 	os.Remove(gen_go_file)
 }
 
