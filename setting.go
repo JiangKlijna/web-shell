@@ -10,6 +10,7 @@ type Parameter struct {
 	Port     string
 	Username string
 	Password string
+	Command  string
 }
 
 func (paras *Parameter) Init() {
@@ -21,6 +22,7 @@ func (paras *Parameter) Init() {
 	paras.Port = strconv.Itoa(*flag.Int("P", 2019, "listening port"))
 	paras.Username = *flag.String("u", "admin", "username")
 	paras.Password = *flag.String("p", "admin", "password")
+	paras.Command = *flag.String("c", "", "command cmd or bash")
 	flag.Parse()
 	flag.Usage = usage
 	if help {
