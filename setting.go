@@ -11,6 +11,7 @@ type Parameter struct {
 	Username string
 	Password string
 	Command  string
+	Encoding string
 }
 
 func (paras *Parameter) Init() {
@@ -23,6 +24,7 @@ func (paras *Parameter) Init() {
 	paras.Username = *flag.String("u", "admin", "username")
 	paras.Password = *flag.String("p", "admin", "password")
 	paras.Command = *flag.String("c", "", "command cmd or bash")
+	paras.Encoding = *flag.String("e", "utf8", "encoding")
 	flag.Parse()
 	flag.Usage = usage
 	if help {
