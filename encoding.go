@@ -1,15 +1,19 @@
 package main
 
 import (
+	"errors"
 	"github.com/axgle/mahonia"
 	"io"
 )
 
 var charset *mahonia.Charset
 
-func InitEncodingIO(encoding string) *mahonia.Charset {
+func InitEncodingIO(encoding string) error {
 	charset = mahonia.GetCharset(encoding)
-	return charset
+	if charset == nil {
+		return errors.New(encoding + " is not support!")
+	}
+	return nil
 }
 
 type EncodingIO struct {
@@ -30,4 +34,3 @@ func (eio *EncodingIO) Write(p []byte) (int, error) {
 func (eio *EncodingIO) Read(p []byte) (int, error) {
 	return eio.rw.Read(p)
 }
-

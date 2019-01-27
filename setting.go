@@ -29,7 +29,6 @@ func (paras *Parameter) Init() {
 	paras.Encoding = *flag.String("e", "utf8", "encoding")
 	flag.Parse()
 	if help {
-		printVersion()
 		printUsage()
 		flag.PrintDefaults()
 		os.Exit(1)
@@ -42,16 +41,24 @@ func (paras *Parameter) Init() {
 }
 
 // Organize command line parameters
-func (paras *Parameter) organize()  {
+func (paras *Parameter) organize() {
 	paras.Command = strings.Trim(paras.Command, " ")
 	if paras.Command == "" {
 		paras.Command = defaultCommand()
 	}
+	err := InitEncodingIO(paras.Encoding)
+	if err != nil {
+		println(err.Error())
+		os.Exit(1)
+	}
 }
 
 func printUsage() {
-	println(`Usage: web-shell [-P port] [-u username] [-p password]
-Example: web-shell -P 2019 -u admin -p admin
+	println(`Usage:
+  web-shell [-P port] [-u username] [-p password] [-c command] [-e encoding]
+
+Example:
+  web-shell -P 2019 -u admin -p admin -c bash -e utf8
 
 Options:`)
 }
