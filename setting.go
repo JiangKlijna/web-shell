@@ -3,7 +3,9 @@ package main
 import (
 	"flag"
 	"os"
+	"runtime"
 	"strconv"
+	"strings"
 )
 
 type Parameter struct {
@@ -26,19 +28,28 @@ func (paras *Parameter) Init() {
 	paras.Command = *flag.String("c", "", "command cmd or bash")
 	paras.Encoding = *flag.String("e", "utf8", "encoding")
 	flag.Parse()
-	flag.Usage = usage
 	if help {
 		printVersion()
-		flag.Usage()
+		printUsage()
 		flag.PrintDefaults()
 		os.Exit(1)
 	} else if version {
 		printVersion()
 		os.Exit(1)
+	} else {
+		paras.organize()
 	}
 }
 
-func usage() {
+// Organize command line parameters
+func (paras *Parameter) organize()  {
+	paras.Command = strings.Trim(paras.Command, " ")
+	if paras.Command == "" {
+		paras.Command = defaultCommand()
+	}
+}
+
+func printUsage() {
 	println(`Usage: web-shell [-P port] [-u username] [-p password]
 Example: web-shell -P 2019 -u admin -p admin
 
@@ -47,4 +58,12 @@ Options:`)
 
 func printVersion() {
 	println("web-shell version:", Version)
+}
+
+func defaultCommand() string {
+	if runtime.GOOS == "windows" {
+		return "cmd"
+	} else {
+		return "bash"
+	}
 }
