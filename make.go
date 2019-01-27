@@ -24,7 +24,7 @@ const gen_go_file = "static_gen.go"
 
 const static_dir = "html"
 
-var go_file = []string{"app.go", "setting.go", "server.go", "handler.go", "websocket.go"}
+var go_file = []string{"app.go", "setting.go", "server.go", "handler.go", "websocket.go", "encoding.go"}
 
 var static_file = map[string]string{
 	"index.html":    "/",
@@ -39,6 +39,13 @@ var xterm_file = map[string]string{
 	"xterm.min.css": "https://cdn.bootcss.com/xterm/3.9.1/xterm.min.css",
 }
 
+func fileExists(path string) bool {
+	if stat, err := os.Stat(path); err == nil {
+		return !stat.IsDir()
+	}
+	return false
+}
+
 // Download static resources
 func down() {
 	get := func(url string) ([]byte, error) {
@@ -48,12 +55,6 @@ func down() {
 		}
 		defer res.Body.Close()
 		return ioutil.ReadAll(res.Body)
-	}
-	fileExists := func(path string) bool {
-		if stat, err := os.Stat(path); err == nil {
-			return !stat.IsDir()
-		}
-		return false
 	}
 	for name, url := range xterm_file {
 		filename := static_dir + "/" + name
@@ -118,18 +119,13 @@ func build() {
 		if exist {
 			ps = append(ps, gen_go_file)
 		}
-		_, err := exec.Command("go", ps...).CombinedOutput()
+		res, err := exec.Command("go", ps...).CombinedOutput()
 		if err != nil {
-			fmt.Println("web-shell build error")
+			fmt.Println("web-shell build error : " + err.Error() + "\n" + string(res))
 		} else {
 			fmt.Println("web-shell build successful")
 		}
-	})((func(path string) bool {
-		if stat, err := os.Stat(path); err == nil {
-			return !stat.IsDir()
-		}
-		return false
-	})(gen_go_file))
+	})(fileExists(gen_go_file))
 }
 
 func invoke(sh ...string) {
