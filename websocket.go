@@ -58,7 +58,8 @@ func WebsocketHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	defer ws.Close()
 	wsio := (*WebSocketIO)(ws)
-	err = execute("cmd", wsio)
+	eio := NewEncodingIO(wsio)
+	err = execute("cmd", eio)
 	if err != nil {
 		log.Println(err)
 		return
