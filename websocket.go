@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"github.com/axgle/mahonia"
 	"github.com/gorilla/websocket"
 	"io"
 	"log"
@@ -26,9 +25,7 @@ type WebSocketIO websocket.Conn
 
 func (io *WebSocketIO) Write(p []byte) (int, error) {
 	ws := (*websocket.Conn)(io)
-	data := mahonia.NewDecoder("gbk").ConvertString(string(p))
-	d := []byte(data)
-	return len(d), ws.WriteMessage(websocket.TextMessage, d)
+	return len(p), ws.WriteMessage(websocket.TextMessage, p)
 }
 
 func (io *WebSocketIO) Read(p []byte) (int, error) {
