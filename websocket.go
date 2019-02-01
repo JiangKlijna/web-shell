@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"github.com/gorilla/websocket"
 	"io"
 	"log"
@@ -35,10 +34,7 @@ func (io *WebSocketIO) Read(p []byte) (int, error) {
 	if err != nil {
 		return 0, err
 	}
-	fmt.Print(string(data))
-	for i, b := range data {
-		p[i] = b
-	}
+	copy(p, data)
 	return len(data), nil
 }
 
