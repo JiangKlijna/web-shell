@@ -28,9 +28,11 @@ func NewEncodingIO(rw io.ReadWriter) io.ReadWriter {
 }
 
 func (eio *EncodingIO) Write(p []byte) (int, error) {
-	return eio.rw.Write(p)
+	data := charset.NewDecoder().ConvertString(string(p))
+	return eio.rw.Write([]byte(data))
 }
 
 func (eio *EncodingIO) Read(p []byte) (int, error) {
-	return eio.rw.Read(p)
+	data := charset.NewEncoder().ConvertString(string(p))
+	return eio.rw.Read([]byte(data))
 }
