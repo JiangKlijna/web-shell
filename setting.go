@@ -22,11 +22,11 @@ func (paras *Parameter) Init() {
 	)
 	flag.BoolVar(&help, "h", false, "this help")
 	flag.BoolVar(&version, "v", false, "show version and exit")
-	paras.Port = strconv.Itoa(*flag.Int("P", 2019, "listening port"))
-	paras.Username = *flag.String("u", "admin", "username")
-	paras.Password = *flag.String("p", "admin", "password")
-	paras.Command = *flag.String("c", "", "command cmd or bash")
-	paras.Encoding = *flag.String("e", "utf8", "encoding")
+	flag.StringVar(&(paras.Port), "P", "2019", "listening port")
+	flag.StringVar(&(paras.Username), "u", "admin", "username")
+	flag.StringVar(&(paras.Password), "p", "admin", "password")
+	flag.StringVar(&(paras.Command), "c", "", "command cmd or bash")
+	flag.StringVar(&(paras.Encoding), "e", "utf8", "encoding")
 	flag.Parse()
 	if help {
 		printUsage()
@@ -42,11 +42,16 @@ func (paras *Parameter) Init() {
 
 // Organize command line parameters
 func (paras *Parameter) organize() {
+	_, err := strconv.Atoi(paras.Port)
+	if err != nil {
+		println("Port " + paras.Port + ":illegal")
+		os.Exit(1)
+	}
 	paras.Command = strings.Trim(paras.Command, " ")
 	if paras.Command == "" {
 		paras.Command = defaultCommand()
 	}
-	err := InitEncodingIO(paras.Encoding)
+	err = InitEncodingIO(paras.Encoding)
 	if err != nil {
 		println(err.Error())
 		os.Exit(1)
