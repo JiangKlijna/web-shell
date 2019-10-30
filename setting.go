@@ -13,20 +13,18 @@ type Parameter struct {
 	Username string
 	Password string
 	Command  string
-	Encoding string
 }
 
-func (paras *Parameter) Init() {
+func (parms *Parameter) Init() {
 	var (
 		help, version bool
 	)
 	flag.BoolVar(&help, "h", false, "this help")
 	flag.BoolVar(&version, "v", false, "show version and exit")
-	flag.StringVar(&(paras.Port), "P", "2019", "listening port")
-	flag.StringVar(&(paras.Username), "u", "admin", "username")
-	flag.StringVar(&(paras.Password), "p", "admin", "password")
-	flag.StringVar(&(paras.Command), "c", "", "command cmd or bash")
-	flag.StringVar(&(paras.Encoding), "e", "utf8", "encoding")
+	flag.StringVar(&(parms.Port), "P", "2019", "listening port")
+	flag.StringVar(&(parms.Username), "u", "admin", "username")
+	flag.StringVar(&(parms.Password), "p", "admin", "password")
+	flag.StringVar(&(parms.Command), "c", "", "command cmd or bash")
 	flag.Parse()
 	if help {
 		printUsage()
@@ -36,25 +34,20 @@ func (paras *Parameter) Init() {
 		printVersion()
 		os.Exit(1)
 	} else {
-		paras.organize()
+		parms.organize()
 	}
 }
 
 // Organize command line parameters
-func (paras *Parameter) organize() {
-	_, err := strconv.Atoi(paras.Port)
+func (parms *Parameter) organize() {
+	_, err := strconv.Atoi(parms.Port)
 	if err != nil {
-		println("Port " + paras.Port + ":illegal")
+		println("Port " + parms.Port + ":illegal")
 		os.Exit(1)
 	}
-	paras.Command = strings.Trim(paras.Command, " ")
-	if paras.Command == "" {
-		paras.Command = defaultCommand()
-	}
-	err = InitEncodingIO(paras.Encoding)
-	if err != nil {
-		println(err.Error())
-		os.Exit(1)
+	parms.Command = strings.Trim(parms.Command, " ")
+	if parms.Command == "" {
+		parms.Command = defaultCommand()
 	}
 }
 

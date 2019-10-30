@@ -2,35 +2,41 @@ package main
 
 import (
 	"github.com/gorilla/websocket"
-	"io"
-	"log"
 	"net/http"
 	"os/exec"
 )
 
-func execute(sh string, rw io.ReadWriter) error {
-	cmd := exec.Command(sh)
-	cmd.Stdin = rw
-	cmd.Stdout = rw
-	cmd.Stderr = rw
-	err := cmd.Start()
-	if err != nil {
-		return err
-	}
-	return cmd.Wait()
+var upgrader = websocket.Upgrader{
+	ReadBufferSize:  2048,
+	WriteBufferSize: 2048,
 }
 
-type WebSocketIO websocket.Conn
+type WebSocketIO struct {
+	conn *websocket.Conn
+}
+
+func NewWebSocketIO(w http.ResponseWriter, r *http.Request) (*WebSocketIO, error) {
+	conn, err := upgrader.Upgrade(w, r, nil)
+	if err != nil {
+		return nil, err
+	}
+	return &WebSocketIO{conn}, nil
+}
+
+func (io *WebSocketIO) execute(sh string) error {
+	cmd := exec.Command(sh)
+	cmd.Stdin = io
+	cmd.Stdout = io
+	cmd.Stderr = io
+	return cmd.Run()
+}
 
 func (io *WebSocketIO) Write(p []byte) (int, error) {
-	ws := (*websocket.Conn)(io)
-	return len(p), ws.WriteMessage(websocket.TextMessage, p)
+	return len(p), io.conn.WriteMessage(websocket.BinaryMessage, p)
 }
 
 func (io *WebSocketIO) Read(p []byte) (int, error) {
-	//return os.Stdin.Read(p)
-	ws := (*websocket.Conn)(io)
-	_, data, err := ws.ReadMessage()
+	_, data, err := io.conn.ReadMessage()
 	if err != nil {
 		return 0, err
 	}
@@ -38,23 +44,18 @@ func (io *WebSocketIO) Read(p []byte) (int, error) {
 	return len(data), nil
 }
 
-var upgrader = websocket.Upgrader{
-	ReadBufferSize:  1024,
-	WriteBufferSize: 1024,
-}
-
-func WebsocketHandler(w http.ResponseWriter, r *http.Request) {
-	ws, err := upgrader.Upgrade(w, r, nil)
-	if err != nil {
-		log.Println(err)
-		return
-	}
-	defer ws.Close()
-	wsio := (*WebSocketIO)(ws)
-	eio := NewEncodingIO(wsio)
-	err = execute("cmd", eio)
-	if err != nil {
-		log.Println(err)
-		return
-	}
+func WebsocketHandler(parms *Parameter) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		io, err := NewWebSocketIO(w, r)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		defer io.conn.Close()
+		err = io.execute(parms.Command)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+	})
 }

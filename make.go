@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/exec"
 	"strconv"
+	"strings"
 )
 
 const MakeRemark = `web-shell Project Build Tool
@@ -24,19 +25,15 @@ const gen_go_file = "static_gen.go"
 
 const static_dir = "html"
 
-var go_file = []string{"app.go", "setting.go", "server.go", "handler.go", "websocket.go", "encoding.go"}
+const xterm_version = "3.14.5"
 
-var static_file = map[string]string{
-	"index.html":    "/",
-	"index.js":      "/index.js",
-	"index.css":     "/index.css",
-	"xterm.min.js":  "/xterm.min.js",
-	"xterm.min.css": "/xterm.min.css",
-}
+var go_file = []string{"app.go", "setting.go", "handler.go", "websocket.go"}
 
-var xterm_file = map[string]string{
-	"xterm.min.js":  "https://cdn.bootcss.com/xterm/3.9.1/xterm.min.js",
-	"xterm.min.css": "https://cdn.bootcss.com/xterm/3.9.1/xterm.min.css",
+var xterm_files = []string{
+	"https://cdn.bootcss.com/xterm/" + xterm_version + "/xterm.min.js",
+	"https://cdn.bootcss.com/xterm/" + xterm_version + "/xterm.min.css",
+	"https://cdn.bootcss.com/xterm/" + xterm_version + "/addons/fit/fit.min.js",
+	"https://cdn.bootcss.com/xterm/" + xterm_version + "/addons/webLinks/webLinks.min.js",
 }
 
 func fileExists(path string) bool {
@@ -56,7 +53,11 @@ func down() {
 		defer res.Body.Close()
 		return ioutil.ReadAll(res.Body)
 	}
-	for name, url := range xterm_file {
+	last := func(arr []string) string {
+		return arr[len(arr)-1]
+	}
+	for _, url := range xterm_files {
+		name := last(strings.Split(url, "/"))
 		filename := static_dir + "/" + name
 		exist := fileExists(filename)
 		if exist {
@@ -80,31 +81,107 @@ func gen() {
 	down()
 	buf := bytes.Buffer{}
 	buf.WriteString(`package main
-import "net/http"
-func init() {
-	StaticHandler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if data, ok := R[r.RequestURI]; ok {
-			w.Write(data)
+import (
+	"bytes"
+	"errors"
+	"net/http"
+	"os"
+	"syscall"
+	"time"
+)
+var modtime = time.Now()
+type MemoryFile struct {
+	*bytes.Reader
+	size  int64
+	name  string
+	isDir bool
+}
+func (m *MemoryFile) Close() error {
+	return nil
+}
+func (m *MemoryFile) Readdir(count int) ([]os.FileInfo, error) {
+	return nil, errors.New("no dir")
+}
+func (m *MemoryFile) Stat() (os.FileInfo, error) {
+	return m, nil
+}
+func (m *MemoryFile) Name() string {
+	return m.name
+}
+func (m *MemoryFile) Size() int64 {
+	return m.size
+}
+func (m *MemoryFile) Mode() os.FileMode {
+	return os.ModePerm
+}
+func (m *MemoryFile) ModTime() time.Time {
+	return modtime
+}
+func (m *MemoryFile) IsDir() bool {
+	return m.isDir
+}
+func (m *MemoryFile) Sys() interface{} {
+	return nil
+}
+type FakeFileSystem struct {
+}
+func (ffs FakeFileSystem) Open(name string) (http.File, error) {
+	if data, ok := R[name]; ok {
+		if data != nil {
+			return &MemoryFile{bytes.NewReader(data), int64(len(data)), name, false}, nil
 		} else {
-			http.Error(w, "File not Found", http.StatusNotFound)
+			return &MemoryFile{nil, 0, name, true}, nil
 		}
-	})
+	} else {
+		return nil, syscall.ERROR_PATH_NOT_FOUND
+	}
+}
+func init() {
+	StaticHandler = http.FileServer(&FakeFileSystem{})
 }
 var R = map[string][]byte{`)
-	for filename, path := range static_file {
-		bs, err := ioutil.ReadFile(static_dir + "/" + filename)
+	type StaticFile struct {
+		isDir      bool
+		name, path string
+	}
+	var getFiles func(string, func(*StaticFile))
+	getFiles = func(dir string, callback func(*StaticFile)) {
+		fs, err := ioutil.ReadDir(dir)
 		if err != nil {
 			panic(err)
 		}
-		buf.WriteString("\n\t\"" + path)
-		buf.WriteString(`":  []byte{`)
-		for _, b := range bs {
-			buf.WriteString(strconv.Itoa(int(b)))
-			buf.WriteString(",")
+		for _, f := range fs {
+			name := dir + "/" + f.Name()
+			sf := &StaticFile{f.IsDir(), name, name[len(static_dir)+1:]}
+			callback(sf)
+			if f.IsDir() {
+				getFiles(name, callback)
+			}
 		}
-		buf.WriteString("},")
-		fmt.Println(filename + " generate successful")
 	}
+	getFiles(static_dir, func(sf *StaticFile) {
+		if sf == nil {
+			return
+		}
+		if sf.isDir {
+			buf.WriteString("\n\t\"/" + sf.path)
+			buf.WriteString(`":nil,`)
+		} else {
+			bs, err := ioutil.ReadFile(sf.name)
+			if err != nil {
+				panic(err)
+			}
+			buf.WriteString("\n\t\"/" + sf.path)
+			buf.WriteString(`":{`)
+			for _, b := range bs {
+				buf.WriteString(strconv.Itoa(int(b)))
+				buf.WriteString(",")
+			}
+			buf.WriteString("},")
+		}
+		fmt.Println(sf.name + " generate successful")
+	})
+	buf.WriteString("\n\t\"/\":nil,")
 	buf.WriteString("\n}")
 	err := ioutil.WriteFile(gen_go_file, buf.Bytes(), 0662)
 	if err != nil {
@@ -114,18 +191,18 @@ var R = map[string][]byte{`)
 
 // Compile and Generate executable file
 func build() {
-	(func(exist bool) {
-		ps := append([]string{"build"}, go_file...)
-		if exist {
-			ps = append(ps, gen_go_file)
-		}
-		res, err := exec.Command("go", ps...).CombinedOutput()
-		if err != nil {
-			fmt.Println("web-shell build error : " + err.Error() + "\n" + string(res))
-		} else {
-			fmt.Println("web-shell build successful")
-		}
-	})(fileExists(gen_go_file))
+	exist := fileExists(gen_go_file)
+
+	ps := append([]string{"build"}, go_file...)
+	if exist {
+		ps = append(ps, gen_go_file)
+	}
+	res, err := exec.Command("go", ps...).CombinedOutput()
+	if err != nil {
+		fmt.Println("web-shell build error : " + err.Error() + "\n" + string(res))
+	} else {
+		fmt.Println("web-shell build successful")
+	}
 }
 
 func invoke(sh ...string) {
@@ -155,7 +232,10 @@ func debug() {
 
 func clean() {
 	invoke("go", "clean")
-	os.Remove(gen_go_file)
+	err := os.Remove(gen_go_file)
+	if err != nil {
+		panic(err)
+	}
 }
 
 func main() {

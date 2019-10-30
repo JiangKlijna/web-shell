@@ -1,71 +1,70 @@
 // xterm.js
 window.term = (function () {
-    var term_dom = document.getElementById('terminal');
+    fit.apply(Terminal);
+    webLinks.apply(Terminal);
+    var dom = document.createElement("div");
+    dom.id = "terminal";
+    document.body.appendChild(dom);
     var term = new Terminal();
-    term.open(term_dom);
 
-    term.write('Hello from \x1B[1;3;31web-shell\x1B[0m $ ');
+    var OnWebLinkClick = function (e, url) {
+        open(url);
+    };
 
     var buf = [];
     term.on("key", function (c, e) {
-        if (e.key === "Enter") {
-            var line = buf.join('')+"\n";
+        console.log(e)
+        if (e.which === 13) {
+            var line = buf.join('') + "\n";
             buf = [];
             console.log(line);
             conn.send(line);
-            term.writeln('');
-        } else {
-            buf.push(c);
-            term.write(c);
+            // term.writeln('');
         }
     });
+
+    term.on('data', function (data) {
+        buf.push(data);
+        term.write(data);
+    });
+
+
+    term.on('paste', function (data) {
+        term.write(data);
+        // this.copy = term.getSelection();
+    });
+
+    // term.on("selection", function() {
+    //     if (term.hasSelection()) {
+    //         this.copy = term.getSelection();
+    //     }
+    // });
+
+    term.open(dom);
+    term.fit();
+    term.webLinksInit(OnWebLinkClick);
     return term;
 })();
 
+function blobToString(blob, encoding, fun) {
+    var reader = new FileReader();
+    reader.onloadend = function () {
+        fun(reader.result);
+    };
+    reader.readAsText(blob, encoding);
+}
+
 // websocket client
 window.conn = (function () {
-    var conn = new WebSocket("ws://" + document.location.host + "/ws");
+    var conn = new WebSocket((location.protocol === 'https:' ? 'wss://' : 'ws://') + location.host + "/cmd");
     conn.onclose = function (e) {
         term.writeln("connection closed.");
     };
+    var onWrite = function (message) {
+        term.write(message);
+    };
     conn.onmessage = function (e) {
-        term.write(e.data);
+        blobToString(e.data, "gbk", onWrite);
     };
     return conn;
-})();
-
-// xterm.js.addons.fit
-window.fit = (function () {
-    function proposeGeometry(term) {
-        var parentElementStyle = window.getComputedStyle(term.element.parentElement);
-        var parentElementHeight = parseInt(parentElementStyle.getPropertyValue('height'));
-        var parentElementWidth = Math.max(0, parseInt(parentElementStyle.getPropertyValue('width')));
-        var elementStyle = window.getComputedStyle(term.element);
-        var elementPadding = {
-            top: parseInt(elementStyle.getPropertyValue('padding-top')),
-            bottom: parseInt(elementStyle.getPropertyValue('padding-bottom')),
-            right: parseInt(elementStyle.getPropertyValue('padding-right')),
-            left: parseInt(elementStyle.getPropertyValue('padding-left'))
-        };
-        var elementPaddingVer = elementPadding.top + elementPadding.bottom;
-        var elementPaddingHor = elementPadding.right + elementPadding.left;
-        var availableHeight = parentElementHeight - elementPaddingVer;
-        var availableWidth = parentElementWidth - elementPaddingHor - term._core.viewport.scrollBarWidth;
-        return {
-            cols: Math.floor(availableWidth / term._core.renderer.dimensions.actualCellWidth),
-            rows: Math.floor(availableHeight / term._core.renderer.dimensions.actualCellHeight)
-        };
-    }
-
-    window.onresize = function (e) {
-        if (!term.element.parentElement) {
-            return null;
-        }
-        var geometry = proposeGeometry(term);
-        if (term.rows !== geometry.rows || term.cols !== geometry.cols) {
-            term._core.renderer.clear();
-            term.resize(geometry.cols, geometry.rows);
-        }
-    };
-    window.onresize();
 })();

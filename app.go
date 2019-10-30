@@ -1,26 +1,47 @@
 package main
 
-const Version = "0.1"
+import (
+	"log"
+	"net/http"
+)
+
+const Version = "0.2"
 const Server = "web-shell-" + Version
 
-type Application struct {
-	server *ShellServer
-	paras  *Parameter
+type WebShellServer struct {
+	http.ServeMux
+	parms *Parameter
 }
 
-// New Application
-func NewApp() *Application {
-	return &Application{new(ShellServer), new(Parameter)}
+// reserved for static_gen.go
+var StaticHandler http.Handler
+
+// register handlers
+func (s *WebShellServer) Init() {
+	s.parms = new(Parameter)
+	s.parms.Init()
+	if StaticHandler == nil {
+		StaticHandler = HtmlDirHandler()
+	}
+	s.Handle("/", s.upgrade(StaticHandler))
+	s.Handle("/cmd", s.upgrade(WebsocketHandler(s.parms)))
 }
 
-// Init App
-func (app *Application) Init() {
-	app.paras.Init()
-	app.server.Init(app.paras)
+// packaging and upgrading http.Handler
+func (s *WebShellServer) upgrade(h http.Handler) http.Handler {
+	return LoggingHandler(GetMethodHandler(AuthHandler(s.parms.Username, s.parms.Password, h)))
+}
+
+// run web-shell server
+func (s *WebShellServer) Run() {
+	err := http.ListenAndServe(":"+s.parms.Port, s)
+	if err != nil {
+		log.Fatal(err)
+	}
 }
 
 func main() {
-	app := NewApp()
-	app.Init()
-	app.server.Run(app.paras)
+	server := new(WebShellServer)
+	server.Init()
+	server.Run()
 }
