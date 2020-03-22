@@ -1,70 +1,97 @@
-// xterm.js
-window.term = (function () {
-    fit.apply(Terminal);
-    webLinks.apply(Terminal);
-    var dom = document.createElement("div");
-    dom.id = "terminal";
-    document.body.appendChild(dom);
-    var term = new Terminal();
+/**
+ * @author jiangklijna
+ */
 
-    var OnWebLinkClick = function (e, url) {
-        open(url);
+// init
+(function (W) {
+    W.DataType = {
+        Err: 0,
+        Data: 1,
+        Resize: 2,
     };
+    W.Terminal = Terminal.Terminal;
+    W.FitAddon = FitAddon.FitAddon;
+    W.WebLinksAddon = WebLinksAddon.WebLinksAddon;
 
-    var buf = [];
-    term.on("key", function (c, e) {
-        console.log(e)
-        if (e.which === 13) {
-            var line = buf.join('') + "\n";
-            buf = [];
-            console.log(line);
-            conn.send(line);
-            // term.writeln('');
-        }
-    });
-
-    term.on('data', function (data) {
-        buf.push(data);
-        term.write(data);
-    });
-
-
-    term.on('paste', function (data) {
-        term.write(data);
-        // this.copy = term.getSelection();
-    });
-
-    // term.on("selection", function() {
-    //     if (term.hasSelection()) {
-    //         this.copy = term.getSelection();
-    //     }
-    // });
-
-    term.open(dom);
-    term.fit();
-    term.webLinksInit(OnWebLinkClick);
-    return term;
-})();
-
-function blobToString(blob, encoding, fun) {
-    var reader = new FileReader();
-    reader.onloadend = function () {
-        fun(reader.result);
+    W.NewWebSocket = function () {
+        return new WebSocket((location.protocol === 'https:' ? 'wss://' : 'ws://') + location.host + "/cmd");
     };
-    reader.readAsText(blob, encoding);
-}
+    W.NewTerminal = function () {
+        return new Terminal({useStyle: true, screenKeys: true});
+    };
+})(window);
 
-// websocket client
-window.conn = (function () {
-    var conn = new WebSocket((location.protocol === 'https:' ? 'wss://' : 'ws://') + location.host + "/cmd");
+// web-shell component
+window.WebShell = function (dom) {
+    var term = NewTerminal();
+    var conn = NewWebSocket();
+    var fitAddon = new FitAddon();
+    var webLinksAddon = new WebLinksAddon();
+
+    // websocket connect
     conn.onclose = function (e) {
         term.writeln("connection closed.");
     };
-    var onWrite = function (message) {
-        term.write(message);
+
+    conn.onopen = function () {
+        fitAddon.fit();
     };
-    conn.onmessage = function (e) {
-        blobToString(e.data, "gbk", onWrite);
+
+    conn.onmessage = function (msg) {
+        term.write(msg.data);
     };
-    return conn;
-})();
+
+    var send = function (dataType, data) {
+        conn.send(JSON.stringify({'t': dataType, "d": data}));
+    };
+
+    // terminal term
+    term.onTitleChange(function (title) {
+        document.title = title;
+    });
+
+    // term.on('paste', function (data) {
+    //     term.write(data);
+    //     // this.copy = term.getSelection();
+    // });
+
+    term.onResize(function (data) {
+        send(DataType.Resize, [data.cols, data.rows]);
+
+    });
+    term.onData(function (data) {
+        send(DataType.Data, data);
+    });
+    term.open(dom);
+
+
+    term.loadAddon(fitAddon);
+    term.loadAddon(webLinksAddon);
+
+    this.fit = function () {
+        fitAddon.fit();
+    };
+    this.term = term;
+    this.conn = conn;
+
+    dom.oncontextmenu = function(){
+        if (term.hasSelection()) {
+            send(DataType.Data, term.getSelection());
+            // term.write(term.getSelection());
+            return false;
+        }
+        return true;
+    }
+};
+
+// run
+(function (W) {
+    var dom = document.createElement("div");
+    dom.style.width = "100%";
+    dom.style.height = "100%";
+    document.body.appendChild(dom);
+    W.singleWebShell = new WebShell(dom);
+    W.onresize = function () {
+        W.singleWebShell.fit();
+    }
+})(window);

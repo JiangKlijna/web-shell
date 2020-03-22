@@ -29,4 +29,9 @@ go.sum
 static_gen.go
 
 # min static file
+xterm*
 *.min.*
+
+# winpty
+*.zip
+winpty/

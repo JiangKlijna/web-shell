@@ -3,7 +3,6 @@ package main
 import (
 	"encoding/base64"
 	"fmt"
-	"io"
 	"net/http"
 	"strings"
 	"time"
@@ -34,23 +33,23 @@ func AuthHandler(username, password string, next http.Handler) http.Handler {
 		}
 		auths := strings.SplitN(auth, " ", 2)
 		if len(auths) != 2 {
-			io.WriteString(w, "Authorization Error!\n")
+			w.Write([]byte("Authorization Error!\n"))
 			return
 		}
 		authMethod := auths[0]
 		if authMethod != "Basic" {
-			io.WriteString(w, "AuthMethod Error!\n")
+			w.Write([]byte("AuthMethod Error!\n"))
 			return
 		}
 		authB64 := auths[1]
 		authstr, err := base64.StdEncoding.DecodeString(authB64)
 		if err != nil {
-			io.WriteString(w, "Unauthorized!\n")
+			w.Write([]byte("Unauthorized!\n"))
 			return
 		}
 		userPwd := strings.SplitN(string(authstr), ":", 2)
 		if len(userPwd) != 2 {
-			io.WriteString(w, "Type Error!\n")
+			w.Write([]byte("Type Error!\n"))
 			return
 		}
 		if username != userPwd[0] || password != userPwd[1] {
@@ -68,11 +67,11 @@ func LoggingHandler(next http.Handler) http.Handler {
 		next.ServeHTTP(w, r)
 		str := fmt.Sprintf(
 			"%s Comleted %s %s in %v from %s",
-			start.Format("2006-01-02 15:04:05"),
+			start.Format("2006/01/02 15:04:05"),
 			r.Method,
 			r.URL.Path,
 			time.Since(start),
 			r.RemoteAddr)
-		go fmt.Println(str)
+		println(str)
 	})
 }

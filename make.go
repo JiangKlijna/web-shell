@@ -1,12 +1,16 @@
 package main
 
 import (
+	"archive/zip"
 	"bytes"
+	"errors"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"net/http"
 	"os"
 	"os/exec"
+	"runtime"
 	"strconv"
 	"strings"
 )
@@ -25,20 +29,30 @@ const gen_go_file = "static_gen.go"
 
 const static_dir = "html"
 
-const xterm_version = "3.14.5"
+const winpty_dir = "winpty"
+const winpty_zip = winpty_dir + ".zip"
+const winpty_download = "https://github.com/rprichard/winpty/releases/download/0.4.3/winpty-0.4.3-msvc2015.zip"
 
 var go_file = []string{"app.go", "setting.go", "handler.go", "websocket.go"}
 
 var xterm_files = []string{
-	"https://cdn.bootcss.com/xterm/" + xterm_version + "/xterm.min.js",
-	"https://cdn.bootcss.com/xterm/" + xterm_version + "/xterm.min.css",
-	"https://cdn.bootcss.com/xterm/" + xterm_version + "/addons/fit/fit.min.js",
-	"https://cdn.bootcss.com/xterm/" + xterm_version + "/addons/webLinks/webLinks.min.js",
+	"https://unpkg.com/xterm@4.0.0/lib/xterm.js",
+	"https://unpkg.com/xterm@4.0.0/css/xterm.css",
+
+	"https://unpkg.com/xterm-addon-fit@0.3.0/lib/xterm-addon-fit.js",
+	"https://unpkg.com/xterm-addon-web-links@0.2.1/lib/xterm-addon-web-links.js",
 }
 
 func fileExists(path string) bool {
 	if stat, err := os.Stat(path); err == nil {
 		return !stat.IsDir()
+	}
+	return false
+}
+
+func fileDir(path string) bool {
+	if stat, err := os.Stat(path); err == nil {
+		return stat.IsDir()
 	}
 	return false
 }
@@ -51,6 +65,9 @@ func down() {
 			return nil, err
 		}
 		defer res.Body.Close()
+		if res.StatusCode < 200 || res.StatusCode >= 300 {
+			return nil, errors.New("response status is " + strconv.Itoa(res.StatusCode))
+		}
 		return ioutil.ReadAll(res.Body)
 	}
 	last := func(arr []string) string {
@@ -74,6 +91,80 @@ func down() {
 		}
 		fmt.Println(filename + " download successful")
 	}
+
+	// download pty and un zip
+	if runtime.GOOS == "windows" {
+		if fileExists(winpty_dir+"/winpty.dll") && fileExists(winpty_dir+"/winpty-agent.exe") {
+			return
+		}
+
+		if fileExists(winpty_zip) {
+			fmt.Println(winpty_zip + " already exist")
+		} else {
+			fmt.Println(winpty_zip + " is downloading")
+			data, err := get(winpty_download)
+			if err != nil {
+				panic(err)
+			}
+			err = ioutil.WriteFile(winpty_zip, data, 0664)
+			if err != nil {
+				panic(err)
+			}
+			fmt.Println(winpty_zip + " download successful")
+		}
+		os.Mkdir(winpty_dir, 0664)
+		reader, err := zip.OpenReader(winpty_zip)
+		if err != nil {
+			panic(err)
+		}
+		var winpty_dll string
+		var winpty_agent string
+		if runtime.GOARCH == "amd64" {
+			winpty_dll = "x64/bin/winpty.dll"
+			winpty_agent = "x64/bin/winpty-agent.exe"
+		} else {
+			winpty_dll = "ia32/bin/winpty.dll"
+			winpty_agent = "ia32/bin/winpty-agent.exe"
+		}
+
+		// foreach zip file
+		for _, file := range reader.File {
+			println(file.Name)
+			if file.Name == winpty_dll {
+				dst, err := os.OpenFile(winpty_dir+"/winpty.dll", os.O_WRONLY|os.O_CREATE|os.O_TRUNC, file.Mode())
+				if err != nil {
+					panic(err)
+				}
+				src, err := file.Open()
+				if err != nil {
+					panic(err)
+				}
+				_, err = io.Copy(dst, src)
+				if err != nil {
+					panic(err)
+				}
+				src.Close()
+				dst.Close()
+			} else if file.Name == winpty_agent {
+				f, err := os.OpenFile(winpty_dir+"/winpty-agent.exe", os.O_WRONLY|os.O_CREATE|os.O_TRUNC, file.Mode())
+				if err != nil {
+					panic(err)
+				}
+				src, err := file.Open()
+				if err != nil {
+					panic(err)
+				}
+				_, err = io.Copy(f, src)
+				if err != nil {
+					panic(err)
+				}
+				src.Close()
+				f.Close()
+			}
+		}
+		reader.Close()
+		fmt.Println(winpty_zip + " unzip successful")
+	}
 }
 
 // generate gen_go_file
@@ -86,10 +177,10 @@ import (
 	"errors"
 	"net/http"
 	"os"
-	"syscall"
 	"time"
 )
 var modtime = time.Now()
+var notDir = errors.New("Not a folder")
 type MemoryFile struct {
 	*bytes.Reader
 	size  int64
@@ -100,7 +191,7 @@ func (m *MemoryFile) Close() error {
 	return nil
 }
 func (m *MemoryFile) Readdir(count int) ([]os.FileInfo, error) {
-	return nil, errors.New("no dir")
+	return nil, notDir
 }
 func (m *MemoryFile) Stat() (os.FileInfo, error) {
 	return m, nil
@@ -133,7 +224,7 @@ func (ffs FakeFileSystem) Open(name string) (http.File, error) {
 			return &MemoryFile{nil, 0, name, true}, nil
 		}
 	} else {
-		return nil, syscall.ERROR_PATH_NOT_FOUND
+		return nil, os.ErrNotExist
 	}
 }
 func init() {
@@ -197,6 +288,11 @@ func build() {
 	if exist {
 		ps = append(ps, gen_go_file)
 	}
+	if runtime.GOOS == "windows" {
+		ps = append(ps, "pty_windows.go")
+	} else {
+		ps = append(ps, "pty_notwin.go")
+	}
 	res, err := exec.Command("go", ps...).CombinedOutput()
 	if err != nil {
 		fmt.Println("web-shell build error : " + err.Error() + "\n" + string(res))
@@ -212,7 +308,10 @@ func invoke(sh ...string) {
 	//cmd.Stdin = os.Stdin
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
-	cmd.Run()
+	err := cmd.Run()
+	if err != nil {
+		println(err.Error())
+	}
 }
 
 // down -> gen -> build
@@ -236,13 +335,13 @@ func clean() {
 	if err != nil {
 		panic(err)
 	}
+	os.Remove(winpty_zip)
 }
 
 func main() {
 	(func() func() {
 		if len(os.Args) < 2 {
-			fmt.Println(MakeRemark)
-			os.Exit(1)
+			return build
 		}
 		switch os.Args[1] {
 		case "run":

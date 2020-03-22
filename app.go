@@ -5,7 +5,7 @@ import (
 	"net/http"
 )
 
-const Version = "0.2"
+const Version = "0.9"
 const Server = "web-shell-" + Version
 
 type WebShellServer struct {
@@ -24,7 +24,7 @@ func (s *WebShellServer) Init() {
 		StaticHandler = HtmlDirHandler()
 	}
 	s.Handle("/", s.upgrade(StaticHandler))
-	s.Handle("/cmd", s.upgrade(WebsocketHandler(s.parms)))
+	s.Handle("/cmd", s.upgrade(PtyHandler(s.parms)))
 }
 
 // packaging and upgrading http.Handler
