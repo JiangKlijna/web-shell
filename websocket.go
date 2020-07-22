@@ -1,40 +1,36 @@
 package main
 
 import (
-	"bufio"
-	"bytes"
 	"encoding/json"
-	"github.com/gorilla/websocket"
 	"io"
 	"log"
 	"net/http"
-	"unicode/utf8"
+
+	"github.com/gorilla/websocket"
+	"github.com/runletapp/go-console"
 )
 
+// Message.Type
 const (
 	TypeErr = iota
 	TypeData
 	TypeResize
 )
 
+// Message Websocket Communication data format
 type Message struct {
 	Type int             `json:"t"`
 	Data json.RawMessage `json:"d"`
 }
 
-type PTY interface {
-	Read(p []byte) (n int, err error)
-	Write(p []byte) (n int, err error)
-	Close()
-	SetSize(w, h uint16)
-}
-
+// PipeLine Connect websocket and pty
 type PipeLine struct {
-	pty  PTY
+	pty  console.Console
 	conn *websocket.Conn
 }
 
-func NewPipeLine(pty PTY, conn *websocket.Conn) *PipeLine {
+// NewPipeLine Malloc PipeLine
+func NewPipeLine(pty console.Console, conn *websocket.Conn) *PipeLine {
 	return &PipeLine{pty, conn}
 }
 
@@ -46,7 +42,8 @@ var upgrader = websocket.Upgrader{
 	},
 }
 
-func PtyHandler(parms *Parameter) http.Handler {
+// CommunicationHandler Make websocket and pty communicate
+func CommunicationHandler(parms *Parameter) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		conn, err := upgrader.Upgrade(w, r, nil)
 		if err != nil {
@@ -54,19 +51,24 @@ func PtyHandler(parms *Parameter) http.Handler {
 			return
 		}
 		defer conn.Close()
-		pty, err := OpenPty(parms.Command)
+		proc, err := console.New(120, 60)
 		if err != nil {
 			conn.WriteMessage(websocket.TextMessage, []byte(err.Error()))
 			return
 		}
-		defer pty.Close()
-		p := NewPipeLine(pty, conn)
-		go p.WritePump()
-		p.ReadPump()
+		err = proc.Start([]string{"wsl"})
+		if err != nil {
+			println(err.Error())
+		}
+		defer proc.Close()
+		p := NewPipeLine(proc, conn)
+		go p.ReadPtyAndWriteWebsocket()
+		p.ReadWebsocketAndWritePty()
 	})
 }
 
-func (w *PipeLine) ReadPump() {
+// ReadWebsocketAndWritePty read websocket and write pty
+func (w *PipeLine) ReadWebsocketAndWritePty() {
 	for {
 		mt, payload, err := w.conn.ReadMessage()
 		if err != nil {
@@ -87,7 +89,7 @@ func (w *PipeLine) ReadPump() {
 		}
 		switch msg.Type {
 		case TypeResize:
-			var size []uint16
+			var size []int
 			err := json.Unmarshal(msg.Data, &size)
 			if err != nil {
 				log.Printf("Error Invalid resize message: %s\n", err)
@@ -109,42 +111,20 @@ func (w *PipeLine) ReadPump() {
 	}
 }
 
-func (w *PipeLine) WritePump() {
+// ReadPtyAndWriteWebsocket read pty and write websocket
+func (w *PipeLine) ReadPtyAndWriteWebsocket() {
 	buf := make([]byte, 8192)
-	reader := bufio.NewReader(w.pty)
-	var buffer bytes.Buffer
+	// reader := bufio.NewReader(w.pty)
 	for {
-		n, err := reader.Read(buf)
+		n, err := w.pty.Read(buf)
 		if err != nil {
 			log.Printf("Error Failed to read from pty master: %s", err)
 			return
 		}
-		//read byte array as Unicode code points (rune in go)
-		bufferBytes := buffer.Bytes()
-		runeReader := bufio.NewReader(bytes.NewReader(append(bufferBytes[:], buf[:n]...)))
-		buffer.Reset()
-		i := 0
-		for i < n {
-			char, charLen, e := runeReader.ReadRune()
-			if e != nil {
-				log.Printf("Error Failed to read from pty master: %s", err)
-				return
-			}
-			if char == utf8.RuneError {
-				runeReader.UnreadRune()
-				break
-			}
-			i += charLen
-			buffer.WriteRune(char)
-		}
-		err = w.conn.WriteMessage(websocket.TextMessage, buffer.Bytes())
+		err = w.conn.WriteMessage(websocket.TextMessage, buf[:n])
 		if err != nil {
 			log.Printf("Error Failed to send UTF8 char: %s", err)
 			return
-		}
-		buffer.Reset()
-		if i < n {
-			buffer.Write(buf[i:n])
 		}
 	}
 }

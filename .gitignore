@@ -12,26 +12,23 @@ target/
 # Binaries for programs and plugins
 *.exe
 *.exe~
+*.out
 *.dll
+*.lib
 *.so
+*.a
 *.dylib
 
 # Test binary, build with `go test -c`
 *.test
 
-# Output of the go coverage tool, specifically when used with LiteIDE
-*.out
-
-# Golang mod
-go.sum
+# vscode
+.vscode/
 
 # web-shell
 static_gen.go
 
 # min static file
-xterm*
-*.min.*
-
-# winpty
-*.zip
-winpty/
+*.js
+*.css
+!index.js

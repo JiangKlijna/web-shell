@@ -1,2 +1,2 @@
 # web-shell
-Web Shell Powered by gorilla/websocket and xtermjs/xterm.js
+Web Shell Powered by gorilla/websocket, runletapp/go-console and xtermjs/xterm.js

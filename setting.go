@@ -8,6 +8,7 @@ import (
 	"strings"
 )
 
+// Parameter Command line parameters
 type Parameter struct {
 	Port     string
 	Username string
@@ -15,6 +16,7 @@ type Parameter struct {
 	Command  string
 }
 
+// Init Parameter
 func (parms *Parameter) Init() {
 	var (
 		help, version bool
@@ -68,7 +70,6 @@ func printVersion() {
 func defaultCommand() string {
 	if runtime.GOOS == "windows" {
 		return "cmd"
-	} else {
-		return "bash"
 	}
+	return "bash"
 }

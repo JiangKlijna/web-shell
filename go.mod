@@ -1,9 +1,8 @@
 module web-shell
 
-go 1.12
+go 1.14
 
 require (
-	github.com/creack/pty v1.1.9
-	github.com/gorilla/websocket v1.4.1
-	github.com/iamacarpet/go-winpty v0.0.0-20190626212035-ae7e53a04c69
+	github.com/gorilla/websocket v1.4.2
+	github.com/runletapp/go-console v0.0.0-20191004002447-392d9735f64d
 )
