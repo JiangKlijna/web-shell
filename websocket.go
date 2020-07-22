@@ -56,7 +56,7 @@ func CommunicationHandler(parms *Parameter) http.Handler {
 			conn.WriteMessage(websocket.TextMessage, []byte(err.Error()))
 			return
 		}
-		err = proc.Start([]string{"wsl"})
+		err = proc.Start([]string{parms.Command})
 		if err != nil {
 			println(err.Error())
 		}
