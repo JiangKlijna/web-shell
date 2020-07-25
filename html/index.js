@@ -90,29 +90,28 @@ window.WebShell = function (dom) {
     (function () {
         var isInput = true;
         var tag = 1;
+        var secret = "";
         var username = "";
         var password = "";
-        var clientIP = "";
 
         (function () {
             isInput = false;
             var token = ('web-shell-token' in sessionStorage) ? sessionStorage.getItem("web-shell-token") : '';
-            GetByAjax("/login?token=" + token, function (data, ajax) {
+            GetByAjax("/login?token=" + token, function (data) {
                 if (data.code == 0) {
                     isInput = false;
                     onLoginSuccess(data.path);
                 } else {
+                    secret = data.secret;
                     isInput = true;
                     term.write("Web Shell login:");
-                    clientIP = ajax.getResponseHeader("Client-Ip");
                 }
             });
         })();
 
         var doLogin = function () {
             isInput = false;
-            var token = md5(username + password + clientIP + navigator.userAgent);
-            token = md5(token + username + password + clientIP + navigator.userAgent);
+            var token = md5(secret + md5(username + secret + password) + secret);
             GetByAjax("/login?token=" + token, function (data) {
                 tag = 1;
                 username = "";
@@ -181,4 +180,5 @@ window.onload = function () {
     this.onresize = function () {
         this.singleWebShell.fit();
     }
+    this.onresize();
 };

@@ -2,13 +2,16 @@ package main
 
 import (
 	"crypto/md5"
+	"crypto/sha256"
 	"crypto/sha512"
+	"strconv"
 
 	"encoding/base64"
 	"fmt"
 	"hash"
 	"math/rand"
 	"net/http"
+	"os"
 	"strings"
 	"time"
 )
@@ -29,19 +32,27 @@ func GetMethodHandler(next http.Handler) http.Handler {
 	})
 }
 
-// GenerateToken get token1 token2
-// token1 = md5(md5(username+password+clientIP+userAgent)+username+password+clientIP+userAgent)
-// token2 = sha512(token1^10)
-func GenerateToken(username, password, clientIP, userAgent string) (string, string) {
+// GenerateToken Get secret token path
+// secret = sha224(clientIP+userAgent+pid+Server).reverse()
+// token = md5(secret+md5(username+secret+password)+secret)
+// path = sha512(secret.reverse()^5+token.reverse()^5).reverse()
+func GenerateToken(username, password, clientIP, userAgent string) (string, string, string) {
 	hex := func(h hash.Hash, val string) string {
 		h.Write([]byte(val))
 		return fmt.Sprintf("%x", h.Sum(nil))
 	}
-	token1 := hex(md5.New(), username+password+clientIP+userAgent)
-	token1 = hex(md5.New(), token1+username+password+clientIP+userAgent)
-	token2 := hex(sha512.New(), strings.Repeat(token1, 10))
-	token2 = hex(sha512.New(), strings.Repeat(token2, 10))
-	return token1, token2
+	reverse := func(s string) string {
+		runes := []rune(s)
+		for from, to := 0, len(runes)-1; from < to; from, to = from+1, to-1 {
+			runes[from], runes[to] = runes[to], runes[from]
+		}
+		return string(runes)
+	}
+	pid := strconv.Itoa(os.Getpid())
+	secret := reverse(hex(sha256.New224(), clientIP+userAgent+pid+Server))
+	token := hex(md5.New(), secret+hex(md5.New(), username+secret+password)+secret)
+	path := reverse(hex(sha512.New(), strings.Repeat(reverse(secret), 5)+strings.Repeat(reverse(token), 5)))
+	return secret, token, path
 }
 
 // VerifyHandler Login verification
@@ -53,8 +64,8 @@ func VerifyHandler(username, password string, next http.Handler) http.Handler {
 			return
 		}
 		clientIP := r.RemoteAddr[0:strings.LastIndex(r.RemoteAddr, ":")]
-		_, token2 := GenerateToken(username, password, clientIP, r.UserAgent())
-		if path != token2 {
+		_, _, correctPath := GenerateToken(username, password, clientIP, r.UserAgent())
+		if path != correctPath {
 			http.Error(w, "403 page forbidden", http.StatusForbidden)
 			return
 		}
@@ -67,25 +78,23 @@ func LoginHandler(username, password string) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "text/json; charset=utf-8")
 		clientIP := r.RemoteAddr[0:strings.LastIndex(r.RemoteAddr, ":")]
+		secret, correctToken, path := GenerateToken(username, password, clientIP, r.UserAgent())
+
 		r.ParseForm()
 		token := r.Form.Get("token")
 		if token == "" {
-			w.Header().Set("Client-Ip", clientIP)
-			w.Write([]byte("{\"code\":1,\"msg\":\"invalid token!\"}"))
+			w.Write([]byte("{\"code\":1,\"msg\":\"invalid token!\",\"secret\":\"" + secret + "\"}"))
 			return
 		}
 
 		time.Sleep(time.Duration(rand.Int63n(int64(time.Second))))
 
-		token1, token2 := GenerateToken(username, password, clientIP, r.UserAgent())
-
-		if token == token1 {
-			// login success && set cookie
-			w.Write([]byte("{\"code\":0,\"msg\":\"login success!\",\"path\":\"" + token2 + "\"}"))
+		if token != correctToken {
+			w.Write([]byte("{\"code\":1,\"msg\":\"Login incorrect!\",\"secret\":\"" + secret + "\"}"))
 			return
 		}
-		w.Header().Set("Client-Ip", clientIP)
-		w.Write([]byte("{\"code\":1,\"msg\":\"Login incorrect!\"}"))
+		// login success
+		w.Write([]byte("{\"code\":0,\"msg\":\"login success!\",\"path\":\"" + path + "\"}"))
 	})
 }
 
