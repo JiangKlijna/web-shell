@@ -4,8 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"log"
-	"net/http"
 
 	"github.com/gorilla/websocket"
 	"github.com/runletapp/go-console"
@@ -31,51 +29,16 @@ type PipeLine struct {
 }
 
 // NewPipeLine Malloc PipeLine
-func NewPipeLine(pty console.Console, skt *websocket.Conn) *PipeLine {
-	return &PipeLine{pty, skt}
-}
-
-var upgrader = websocket.Upgrader{
-	ReadBufferSize:  1024,
-	WriteBufferSize: 1024,
-	CheckOrigin: func(r *http.Request) bool {
-		return true
-	},
-}
-
-// CommunicationHandler Make websocket and childprocess communicate
-func CommunicationHandler(parms *Parameter) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		conn, err := upgrader.Upgrade(w, r, nil)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-		defer conn.Close()
-		proc, err := console.New(120, 60)
-		if err != nil {
-			conn.WriteMessage(websocket.TextMessage, []byte(err.Error()))
-			return
-		}
-		defer proc.Close()
-		err = proc.Start([]string{parms.Command})
-		if err != nil {
-			conn.WriteMessage(websocket.TextMessage, []byte(err.Error()))
-			return
-		}
-
-		logChan := make(chan string)
-		pl := NewPipeLine(proc, conn)
-		go pl.ReadSktAndWritePty(logChan)
-		go pl.ReadPtyAndWriteSkt(logChan)
-
-		errlog := <-logChan
-		log.Println(errlog)
-		go func() {
-			<-logChan
-			close(logChan)
-		}()
-	})
+func NewPipeLine(conn *websocket.Conn, command string) (*PipeLine, error) {
+	proc, err := console.New(120, 60)
+	if err != nil {
+		return nil, err
+	}
+	err = proc.Start([]string{command})
+	if err != nil {
+		return nil, err
+	}
+	return &PipeLine{proc, conn}, nil
 }
 
 // ReadSktAndWritePty read skt and write pty

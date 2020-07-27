@@ -27,7 +27,7 @@ func (s *WebShellServer) Init() {
 		StaticHandler = HTMLDirHandler()
 	}
 	s.Handle("/", s.upgrade(StaticHandler))
-	s.Handle("/cmd/", s.upgrade(VerifyHandler(s.parms.Username, s.parms.Password, CommunicationHandler(s.parms))))
+	s.Handle("/cmd/", s.upgrade(VerifyHandler(s.parms.Username, s.parms.Password, ConnectionHandler(s.parms))))
 	s.Handle("/login", s.upgrade(LoginHandler(s.parms.Username, s.parms.Password)))
 }
 

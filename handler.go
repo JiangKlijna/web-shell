@@ -4,6 +4,7 @@ import (
 	"crypto/md5"
 	"crypto/sha256"
 	"crypto/sha512"
+	"log"
 	"strconv"
 
 	"encoding/base64"
@@ -14,6 +15,8 @@ import (
 	"os"
 	"strings"
 	"time"
+
+	"github.com/gorilla/websocket"
 )
 
 // HTMLDirHandler FileServer
@@ -95,6 +98,44 @@ func LoginHandler(username, password string) http.Handler {
 		}
 		// login success
 		w.Write([]byte("{\"code\":0,\"msg\":\"login success!\",\"path\":\"" + path + "\"}"))
+	})
+}
+
+// ConnectionHandler Make websocket and childprocess communicate
+func ConnectionHandler(parms *Parameter) http.Handler {
+	var upgrader = websocket.Upgrader{
+		ReadBufferSize:  1024,
+		WriteBufferSize: 1024,
+		CheckOrigin: func(r *http.Request) bool {
+			return true
+		},
+	}
+
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		conn, err := upgrader.Upgrade(w, r, nil)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		defer conn.Close()
+
+		pl, err := NewPipeLine(conn, parms.Command)
+		if err != nil {
+			conn.WriteMessage(websocket.TextMessage, []byte(err.Error()))
+			return
+		}
+		defer pl.pty.Close()
+
+		logChan := make(chan string)
+		go pl.ReadSktAndWritePty(logChan)
+		go pl.ReadPtyAndWriteSkt(logChan)
+
+		errlog := <-logChan
+		log.Println(errlog)
+		go func() {
+			<-logChan
+			close(logChan)
+		}()
 	})
 }
 
