@@ -21,7 +21,7 @@ const staticGenGoFile = "static_gen.go"
 
 const staticDir = "html"
 
-var goFiles = []string{"app.go", "setting.go", "handler.go", "websocket.go"}
+var goFiles = []string{"app.go", "setting.go", "handler.go", "connection.go"}
 
 var staticFiles = []string{
 	"https://cdnjs.cloudflare.com/ajax/libs/blueimp-md5/2.16.0/js/md5.min.js",
