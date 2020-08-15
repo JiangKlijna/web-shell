@@ -37,7 +37,7 @@ func (parms *Parameter) Init() {
 	flag.StringVar(&(parms.Host), "H", "127.0.0.1", "connect to host")
 	flag.StringVar(&(parms.Port), "P", "2020", "listening port")
 	flag.StringVar(&(parms.Username), "u", "admin", "username")
-	flag.StringVar(&(parms.Password), "p", "admin", "password")
+	flag.StringVar(&(parms.Password), "p", "webshell", "password")
 	flag.StringVar(&(parms.Command), "cmd", "", "command cmd or bash")
 	flag.StringVar(&(parms.ContentPath), "cp", "", "content path")
 
