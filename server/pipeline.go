@@ -1,4 +1,4 @@
-package main
+package server
 
 import (
 	"encoding/json"
@@ -6,21 +6,9 @@ import (
 	"io"
 
 	"github.com/gorilla/websocket"
+	"github.com/jiangklijna/web-shell/lib"
 	"github.com/runletapp/go-console"
 )
-
-// Message.Type
-const (
-	TypeErr = iota
-	TypeData
-	TypeResize
-)
-
-// Message Websocket Communication data format
-type Message struct {
-	Type int             `json:"t"`
-	Data json.RawMessage `json:"d"`
-}
 
 // PipeLine Connect websocket and childprocess
 type PipeLine struct {
@@ -53,14 +41,14 @@ func (w *PipeLine) ReadSktAndWritePty(logChan chan string) {
 			logChan <- fmt.Sprintf("Error ReadSktAndWritePty Invalid message type %d", mt)
 			return
 		}
-		var msg Message
+		var msg lib.Message
 		err = json.Unmarshal(payload, &msg)
 		if err != nil {
 			logChan <- fmt.Sprintf("Error ReadSktAndWritePty Invalid message %s", err)
 			return
 		}
 		switch msg.Type {
-		case TypeResize:
+		case lib.TypeResize:
 			var size []int
 			err := json.Unmarshal(msg.Data, &size)
 			if err != nil {
@@ -72,7 +60,7 @@ func (w *PipeLine) ReadSktAndWritePty(logChan chan string) {
 				logChan <- fmt.Sprintf("Error ReadSktAndWritePty pty resize failed: %s", err)
 				return
 			}
-		case TypeData:
+		case lib.TypeData:
 			var dat string
 			err := json.Unmarshal(msg.Data, &dat)
 			if err != nil {

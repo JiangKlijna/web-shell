@@ -19,9 +19,6 @@ func compressStatic(m *minify.M, filename string) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	if strings.HasSuffix(filename, ".min.js") || strings.HasSuffix(filename, ".min.css") {
-		return bs, nil
-	}
 	if ext != "js" && ext != "css" && ext != "html" {
 		return bs, nil
 	}
@@ -39,7 +36,7 @@ func MakeGen() {
 
 	MakeDown()
 	buf := bytes.Buffer{}
-	buf.WriteString(`package main
+	buf.WriteString(`package server
 import (
 	"bytes"
 	"errors"

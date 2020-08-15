@@ -24,6 +24,7 @@ target/
 
 # vscode
 .vscode/
+__debug_bin
 
 # web-shell
 static_gen.go
@@ -32,3 +33,9 @@ static_gen.go
 *.js
 *.css
 !index.js
+
+# tls file
+*.crt
+*.cet
+*.key
+*.pem

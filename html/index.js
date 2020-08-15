@@ -14,7 +14,7 @@
     W.WebLinksAddon = WebLinksAddon.WebLinksAddon;
 
     W.NewWebSocket = function (path) {
-        return new WebSocket((location.protocol === 'https:' ? 'wss://' : 'ws://') + location.host + "/cmd/" + path);
+        return new WebSocket((location.protocol === 'https:' ? 'wss://' : 'ws://') + location.host + location.pathname + "cmd/" + path);
     };
     W.NewTerminal = function () {
         return new Terminal({ useStyle: true, screenKeys: true });
@@ -97,7 +97,7 @@ window.WebShell = function (dom) {
         (function () {
             isInput = false;
             var token = ('web-shell-token' in sessionStorage) ? sessionStorage.getItem("web-shell-token") : '';
-            GetByAjax("/login?token=" + token, function (data) {
+            GetByAjax("login?token=" + token, function (data) {
                 if (data.code == 0) {
                     isInput = false;
                     onLoginSuccess(data.path);
@@ -112,7 +112,7 @@ window.WebShell = function (dom) {
         var doLogin = function () {
             isInput = false;
             var token = md5(secret + md5(username + secret + password) + secret);
-            GetByAjax("/login?token=" + token, function (data) {
+            GetByAjax("login?token=" + token, function (data) {
                 tag = 1;
                 username = "";
                 password = "";

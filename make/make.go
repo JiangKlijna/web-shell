@@ -17,16 +17,14 @@ usage:
 	make clean		Clean tmp files
 `
 
-const staticGenGoFile = "static_gen.go"
+const staticGenGoFile = "./server/static_gen.go"
 
 const staticDir = "html"
 
-var goFiles = []string{"app.go", "setting.go", "handler.go", "connection.go"}
-
 var staticFiles = []string{
 	"https://cdnjs.cloudflare.com/ajax/libs/blueimp-md5/2.16.0/js/md5.min.js",
-	"https://unpkg.com/xterm@4.7.0/lib/xterm.js",
-	"https://unpkg.com/xterm@4.7.0/css/xterm.css",
+	"https://unpkg.com/xterm@4.8.1/lib/xterm.js",
+	"https://unpkg.com/xterm@4.8.1/css/xterm.css",
 
 	"https://unpkg.com/xterm-addon-fit@0.4.0/lib/xterm-addon-fit.js",
 	"https://unpkg.com/xterm-addon-webgl@0.8.0/lib/xterm-addon-webgl.js",

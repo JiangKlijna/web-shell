@@ -6,18 +6,19 @@ import (
 
 // MakeBuild Compile and Generate executable file
 func MakeBuild() {
-	exist := fileExists(staticGenGoFile)
+	// exist := fileExists(staticGenGoFile)
 
-	ps := append([]string{"build"}, goFiles...)
-	if exist {
-		ps = append(ps, staticGenGoFile)
-	}
+	// ps := append([]string{"build"}, goFiles...)
+	// if exist {
+	// 	ps = append(ps, staticGenGoFile)
+	// }
+
 	// if runtime.GOOS == "windows" {
 	// 	ps = append(ps, "pty_windows.go")
 	// } else {
 	// 	ps = append(ps, "pty_notwin.go")
 	// }
-	res, err := exec.Command("go", ps...).CombinedOutput()
+	res, err := exec.Command("go", "build").CombinedOutput()
 	if err != nil {
 		println("web-shell build error:", err.Error())
 		println(string(res))

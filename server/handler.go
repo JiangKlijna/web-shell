@@ -1,22 +1,15 @@
-package main
+package server
 
 import (
-	"crypto/md5"
-	"crypto/sha256"
-	"crypto/sha512"
-	"log"
-	"strconv"
-
-	"encoding/base64"
 	"fmt"
-	"hash"
+	"log"
 	"math/rand"
 	"net/http"
-	"os"
 	"strings"
 	"time"
 
 	"github.com/gorilla/websocket"
+	"github.com/jiangklijna/web-shell/lib"
 )
 
 // HTMLDirHandler FileServer
@@ -28,48 +21,25 @@ func HTMLDirHandler() http.Handler {
 func GetMethodHandler(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != "GET" {
-			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+			w.WriteHeader(http.StatusMethodNotAllowed)
 			return
 		}
 		next.ServeHTTP(w, r)
 	})
 }
 
-// GenerateToken Get secret token path
-// secret = sha224(clientIP+userAgent+pid+Server).reverse()
-// token = md5(secret+md5(username+secret+password)+secret)
-// path = sha512(secret.reverse()^5+token.reverse()^5).reverse()
-func GenerateToken(username, password, clientIP, userAgent string) (string, string, string) {
-	hex := func(h hash.Hash, val string) string {
-		h.Write([]byte(val))
-		return fmt.Sprintf("%x", h.Sum(nil))
-	}
-	reverse := func(s string) string {
-		runes := []rune(s)
-		for from, to := 0, len(runes)-1; from < to; from, to = from+1, to-1 {
-			runes[from], runes[to] = runes[to], runes[from]
-		}
-		return string(runes)
-	}
-	pid := strconv.Itoa(os.Getpid())
-	secret := reverse(hex(sha256.New224(), clientIP+userAgent+pid+Server))
-	token := hex(md5.New(), secret+hex(md5.New(), username+secret+password)+secret)
-	path := reverse(hex(sha512.New(), strings.Repeat(reverse(secret), 5)+strings.Repeat(reverse(token), 5)))
-	return secret, token, path
-}
-
 // VerifyHandler Login verification
 func VerifyHandler(username, password string, next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		path := strings.TrimPrefix(r.URL.Path, "/cmd/")
-		if path == "" {
-			http.Error(w, "404 page not found", http.StatusNotFound)
+		if len(path) < 10 {
+			w.WriteHeader(http.StatusNotFound)
 			return
 		}
 		clientIP := r.RemoteAddr[0:strings.LastIndex(r.RemoteAddr, ":")]
-		_, _, correctPath := GenerateToken(username, password, clientIP, r.UserAgent())
+		_, _, correctPath := lib.GenerateAll(username, password, clientIP, r.UserAgent())
 		if path != correctPath {
-			http.Error(w, "403 page forbidden", http.StatusForbidden)
+			w.WriteHeader(http.StatusForbidden)
 			return
 		}
 		next.ServeHTTP(w, r)
@@ -81,7 +51,7 @@ func LoginHandler(username, password string) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "text/json; charset=utf-8")
 		clientIP := r.RemoteAddr[0:strings.LastIndex(r.RemoteAddr, ":")]
-		secret, correctToken, path := GenerateToken(username, password, clientIP, r.UserAgent())
+		secret := lib.GenerateSecret(clientIP, r.UserAgent())
 
 		r.ParseForm()
 		token := r.Form.Get("token")
@@ -90,19 +60,21 @@ func LoginHandler(username, password string) http.Handler {
 			return
 		}
 
-		time.Sleep(time.Duration(rand.Int63n(int64(time.Second))))
+		time.Sleep(time.Duration(rand.Int63n(int64(time.Second / 2))))
+		correctToken := lib.GenerateToken(username, password, secret)
 
 		if token != correctToken {
 			w.Write([]byte("{\"code\":1,\"msg\":\"Login incorrect!\",\"secret\":\"" + secret + "\"}"))
 			return
 		}
+		path := lib.GeneratePath(secret, token)
 		// login success
 		w.Write([]byte("{\"code\":0,\"msg\":\"login success!\",\"path\":\"" + path + "\"}"))
 	})
 }
 
 // ConnectionHandler Make websocket and childprocess communicate
-func ConnectionHandler(parms *Parameter) http.Handler {
+func ConnectionHandler(command string) http.Handler {
 	var upgrader = websocket.Upgrader{
 		ReadBufferSize:  1024,
 		WriteBufferSize: 1024,
@@ -114,12 +86,12 @@ func ConnectionHandler(parms *Parameter) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		conn, err := upgrader.Upgrade(w, r, nil)
 		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+			log.Println("upgrader.Upgrade error:", err.Error())
 			return
 		}
 		defer conn.Close()
 
-		pl, err := NewPipeLine(conn, parms.Command)
+		pl, err := NewPipeLine(conn, command)
 		if err != nil {
 			conn.WriteMessage(websocket.TextMessage, []byte(err.Error()))
 			return
@@ -139,41 +111,11 @@ func ConnectionHandler(parms *Parameter) http.Handler {
 	})
 }
 
-// AuthHandler @Deprecated http authentication
-func AuthHandler(username, password string, next http.Handler) http.Handler {
+// ContentPathHandler content path prefix
+func ContentPathHandler(contentpath string, next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		auth := r.Header.Get("Authorization")
-		if auth == "" {
-			w.Header().Set("WWW-Authenticate", `Basic realm="Dotcoo User Login"`)
-			w.WriteHeader(http.StatusUnauthorized)
-			return
-		}
-		auths := strings.SplitN(auth, " ", 2)
-		if len(auths) != 2 {
-			w.Write([]byte("Authorization Error!\n"))
-			return
-		}
-		authMethod := auths[0]
-		if authMethod != "Basic" {
-			w.Write([]byte("AuthMethod Error!\n"))
-			return
-		}
-		authB64 := auths[1]
-		authstr, err := base64.StdEncoding.DecodeString(authB64)
-		if err != nil {
-			w.Write([]byte("Unauthorized!\n"))
-			return
-		}
-		userPwd := strings.SplitN(string(authstr), ":", 2)
-		if len(userPwd) != 2 {
-			w.Write([]byte("Type Error!\n"))
-			return
-		}
-		if username != userPwd[0] || password != userPwd[1] {
-			w.Header().Set("WWW-Authenticate", `Basic realm="Dotcoo User Login"`)
-			w.WriteHeader(http.StatusUnauthorized)
-			return
-		}
+		p := strings.TrimPrefix(r.URL.Path, contentpath)
+		r.URL.Path = p
 		next.ServeHTTP(w, r)
 	})
 }
