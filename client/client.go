@@ -2,6 +2,7 @@ package client
 
 import (
 	"crypto/tls"
+	"crypto/x509"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -15,7 +16,7 @@ import (
 )
 
 // Version WebShell Client current version
-const Version = "1.0"
+const Version = "1.1"
 
 // UserAgent Request header[User-Agent]
 var UserAgent = fmt.Sprintf("web-shell-client/%s (%s; %s; %s)", Version, runtime.GOOS, runtime.GOARCH, runtime.Version())
@@ -27,18 +28,33 @@ type WebShellClient struct {
 }
 
 // Init http client
-func (c *WebShellClient) Init() {
-	c.Client = &http.Client{Transport: &http.Transport{TLSClientConfig: &tls.Config{InsecureSkipVerify: true}}}
-	c.Dialer = &websocket.Dialer{TLSClientConfig: &tls.Config{InsecureSkipVerify: true}}
+func (c *WebShellClient) Init(https bool, crt string) {
+	if https {
+		certBytes, err := ioutil.ReadFile(crt)
+		if err != nil {
+			panic("Unable to read cert.pem")
+		}
+		clientCertPool := x509.NewCertPool()
+		if ok := clientCertPool.AppendCertsFromPEM(certBytes); !ok {
+			panic("failed to parse root certificate")
+		}
+		tlsConfig := &tls.Config{RootCAs: clientCertPool}
+		c.Client = &http.Client{Transport: &http.Transport{TLSClientConfig: tlsConfig}}
+		c.Dialer = &websocket.Dialer{TLSClientConfig: tlsConfig}
+	} else {
+		c.Client = &http.Client{}
+		c.Dialer = &websocket.Dialer{}
+	}
 }
 
 // Run WebShellClient
-func (c *WebShellClient) Run(host, post, contentpath string) {
-	path, err := LoginServer(host, post, contentpath, c.GetJSON)
+func (c *WebShellClient) Run(https bool, host, post, contentpath string) {
+	path, err := LoginServer(https, host, post, contentpath, c.GetJSON)
 	if err != nil {
 		log.Println("Login to Server failed:", err.Error())
+		return
 	}
-	ConnectSocket(host, post, contentpath, path, UserAgent, c.GetWebsocket)
+	ConnectSocket(https, host, post, contentpath, path, UserAgent, c.GetWebsocket)
 }
 
 // GetRes http get request

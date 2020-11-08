@@ -9,13 +9,17 @@ import (
 )
 
 // LoginServer get websocket path
-func LoginServer(host, port, contentpath string, get func(url string) (map[string]interface{}, error)) (string, error) {
-	var LoginURL = "http://" + host + ":" + port + contentpath + "/login"
+func LoginServer(https bool, host, port, contentpath string, get func(url string) (map[string]interface{}, error)) (string, error) {
+	protocol := "http"
+	if https {
+		protocol = "https"
+	}
+	var LoginURL = protocol + "://" + host + ":" + port + contentpath + "/login"
 	res, err := get(LoginURL)
 	if err != nil {
 		return "", err
 	}
-	token := lib.GenerateToken("admin", "admin", res["secret"].(string))
+	token := lib.GenerateToken("admin", "webshell", res["secret"].(string))
 	data, err := get(LoginURL + "?token=" + token)
 	if err != nil {
 		return "", err
@@ -27,8 +31,12 @@ func LoginServer(host, port, contentpath string, get func(url string) (map[strin
 }
 
 // ConnectSocket c
-func ConnectSocket(host, port, contentpath, path, UserAgent string, conn func(url string) (*websocket.Conn, error)) {
-	skt, err := conn("ws://" + host + ":" + port + contentpath + "/cmd/" + path)
+func ConnectSocket(https bool, host, port, contentpath, path, UserAgent string, conn func(url string) (*websocket.Conn, error)) {
+	protocol := "ws"
+	if https {
+		protocol = "wss"
+	}
+	skt, err := conn(protocol + "://" + host + ":" + port + contentpath + "/cmd/" + path)
 	if err != nil {
 		log.Println("Connect to WebSocket failed:", err.Error())
 		return

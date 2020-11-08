@@ -15,6 +15,7 @@ import (
 type Parameter struct {
 	Server      bool
 	Client      bool
+	HTTPS       bool
 	Host        string
 	Port        string
 	Username    string
@@ -34,12 +35,15 @@ func (parms *Parameter) Init() {
 	flag.BoolVar(&version, "v", false, "show version and exit")
 	flag.BoolVar(&(parms.Server), "s", false, "server mode")
 	flag.BoolVar(&(parms.Client), "c", false, "client mode")
+	flag.BoolVar(&(parms.HTTPS), "https", false, "enable https")
 	flag.StringVar(&(parms.Host), "H", "127.0.0.1", "connect to host")
 	flag.StringVar(&(parms.Port), "P", "2020", "listening port")
 	flag.StringVar(&(parms.Username), "u", "admin", "username")
 	flag.StringVar(&(parms.Password), "p", "webshell", "password")
 	flag.StringVar(&(parms.Command), "cmd", "", "command cmd or bash")
 	flag.StringVar(&(parms.ContentPath), "cp", "", "content path")
+	flag.StringVar(&(parms.CrtFile), "crt", "", "crt file")
+	flag.StringVar(&(parms.KeyFile), "key", "", "key file")
 
 	flag.Parse()
 	if help {
@@ -59,11 +63,11 @@ func (parms *Parameter) Run() {
 	if parms.Server {
 		s := new(server.WebShellServer)
 		s.Init(parms.Username, parms.Password, parms.Command, parms.ContentPath)
-		s.Run(parms.Port)
+		s.Run(parms.HTTPS, parms.Port, parms.CrtFile, parms.KeyFile)
 	} else if parms.Client {
 		c := new(client.WebShellClient)
-		c.Init()
-		c.Run(parms.Host, parms.Port, parms.ContentPath)
+		c.Init(parms.HTTPS, parms.CrtFile)
+		c.Run(parms.HTTPS, parms.Host, parms.Port, parms.ContentPath)
 	}
 }
 
@@ -71,6 +75,14 @@ func (parms *Parameter) Run() {
 func (parms *Parameter) organize() {
 	if (parms.Server && parms.Client) || (!parms.Server && !parms.Client) {
 		println("select server mode OR client mode.")
+		os.Exit(1)
+	}
+	if parms.Server && parms.HTTPS && (parms.CrtFile == "" || parms.KeyFile == "") {
+		println("the crt file and key file are required in server mode.")
+		os.Exit(1)
+	}
+	if parms.Client && parms.HTTPS && (parms.CrtFile == "") {
+		println("the crt file is required in client mode.")
 		os.Exit(1)
 	}
 	_, err := strconv.Atoi(parms.Port)

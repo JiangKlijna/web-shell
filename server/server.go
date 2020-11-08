@@ -5,7 +5,7 @@ import (
 )
 
 // Version WebShell Server current version
-const Version = "1.1"
+const Version = "1.2"
 
 // Server Response header[Server]
 const Server = "web-shell-" + Version
@@ -34,8 +34,13 @@ func (s *WebShellServer) upgrade(ContentPath string, h http.Handler) http.Handle
 }
 
 // Run WebShell server
-func (s *WebShellServer) Run(Port string) {
-	err := http.ListenAndServe(":"+Port, s)
+func (s *WebShellServer) Run(https bool, port, crt, key string) {
+	var err error
+	if https {
+		err = http.ListenAndServeTLS(":"+port, crt, key, s)
+	} else {
+		err = http.ListenAndServe(":"+port, s)
+	}
 	if err != nil {
 		println(err.Error())
 	}

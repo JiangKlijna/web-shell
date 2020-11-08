@@ -35,7 +35,10 @@ static_gen.go
 !index.js
 
 # tls file
+*.srl
+*.csr
 *.crt
 *.cet
 *.key
 *.pem
+*.public
