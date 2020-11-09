@@ -9,7 +9,7 @@ import (
 )
 
 // LoginServer get websocket path
-func LoginServer(https bool, host, port, contentpath string, get func(url string) (map[string]interface{}, error)) (string, error) {
+func LoginServer(https bool, username, password, host, port, contentpath string, get func(url string) (map[string]interface{}, error)) (string, error) {
 	protocol := "http"
 	if https {
 		protocol = "https"
@@ -19,7 +19,7 @@ func LoginServer(https bool, host, port, contentpath string, get func(url string
 	if err != nil {
 		return "", err
 	}
-	token := lib.GenerateToken("admin", "webshell", res["secret"].(string))
+	token := lib.GenerateToken(username, password, res["secret"].(string))
 	data, err := get(LoginURL + "?token=" + token)
 	if err != nil {
 		return "", err

@@ -48,8 +48,8 @@ func (c *WebShellClient) Init(https bool, crt string) {
 }
 
 // Run WebShellClient
-func (c *WebShellClient) Run(https bool, host, post, contentpath string) {
-	path, err := LoginServer(https, host, post, contentpath, c.GetJSON)
+func (c *WebShellClient) Run(https bool, username, password, host, post, contentpath string) {
+	path, err := LoginServer(https, username, password, host, post, contentpath, c.GetJSON)
 	if err != nil {
 		log.Println("Login to Server failed:", err.Error())
 		return

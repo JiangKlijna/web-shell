@@ -67,7 +67,7 @@ func (parms *Parameter) Run() {
 	} else if parms.Client {
 		c := new(client.WebShellClient)
 		c.Init(parms.HTTPS, parms.CrtFile)
-		c.Run(parms.HTTPS, parms.Host, parms.Port, parms.ContentPath)
+		c.Run(parms.HTTPS, parms.Username, parms.Password, parms.Host, parms.Port, parms.ContentPath)
 	}
 }
 
