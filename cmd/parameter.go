@@ -97,11 +97,11 @@ func (parms *Parameter) organize() {
 	parms.ContentPath = strings.Trim(parms.ContentPath, " ")
 	if len(parms.ContentPath) > 0 {
 		if parms.ContentPath[0] != '/' {
-			println("CpntentPath must start with /, not", parms.ContentPath)
+			println("ContentPath must start with /, not", parms.ContentPath)
 			os.Exit(1)
 		}
 		if parms.ContentPath[len(parms.ContentPath)-1] == '/' {
-			println("CpntentPath connot end with /, not", parms.ContentPath)
+			println("ContentPath connot end with /, not", parms.ContentPath)
 			os.Exit(1)
 		}
 	}
@@ -126,7 +126,7 @@ func printVersion() {
 
 func defaultCommand() string {
 	if runtime.GOOS == "windows" {
-		return "powershell"
+		return "cmd"
 	}
 	return "bash"
 }
