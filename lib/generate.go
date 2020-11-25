@@ -4,16 +4,21 @@ import (
 	"crypto/md5"
 	"crypto/sha256"
 	"crypto/sha512"
-	"os"
+	"math/rand"
 	"runtime"
 	"strconv"
 	"strings"
+	"time"
 )
 
+// seed Secret.seed
+var seed = strconv.FormatInt(time.Now().UnixNano(), 36) + strconv.FormatUint(rand.New(rand.NewSource(time.Now().UnixNano())).Uint64(), 36)
+
 // GenerateSecret Get secret
-// secret = sha224(clientIP+userAgent+pid+Server).reverse()
+// secret = sha224(seed+Version+GOOS+GOARCH+date+clientIP+userAgent).reverse()
 func GenerateSecret(clientIP, userAgent string) string {
-	return ReverseString(HashCalculation(sha256.New224(), clientIP+userAgent+strconv.Itoa(os.Getpid())+runtime.Version()+runtime.GOOS+runtime.GOARCH))
+	date := time.Now().Format("2006-01-02")
+	return ReverseString(HashCalculation(sha256.New224(), seed+runtime.Version()+runtime.GOOS+runtime.GOARCH+date+clientIP+userAgent))
 }
 
 // GenerateToken Get token
