@@ -23,11 +23,11 @@ const staticDir = "html"
 
 var staticFiles = []string{
 	"https://cdnjs.cloudflare.com/ajax/libs/blueimp-md5/2.16.0/js/md5.min.js",
-	"https://unpkg.com/xterm@4.8.1/lib/xterm.js",
-	"https://unpkg.com/xterm@4.8.1/css/xterm.css",
+	"https://unpkg.com/xterm@4.9.0/lib/xterm.js",
+	"https://unpkg.com/xterm@4.9.0/css/xterm.css",
 
 	"https://unpkg.com/xterm-addon-fit@0.4.0/lib/xterm-addon-fit.js",
-	"https://unpkg.com/xterm-addon-webgl@0.8.0/lib/xterm-addon-webgl.js",
+	"https://unpkg.com/xterm-addon-webgl@0.9.0/lib/xterm-addon-webgl.js",
 	"https://unpkg.com/xterm-addon-web-links@0.4.0/lib/xterm-addon-web-links.js",
 }
 
