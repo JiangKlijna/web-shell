@@ -60,6 +60,7 @@ window.WebShell = function (dom) {
         };
 
         conn.onmessage = function (msg) {
+            window.data = msg.data;
             term.write(msg.data);
         };
 
@@ -71,19 +72,8 @@ window.WebShell = function (dom) {
         });
     };
 
-
-
     // terminal term
-    term.onTitleChange(function (title) {
-        document.title = title;
-    });
-
-    // term.on('paste', function (data) {
-    //     term.write(data);
-    //     // this.copy = term.getSelection();
-    // });
-
-
+    term.onTitleChange(function (title) { document.title = title; });
     term.open(dom);
 
     // webshell login module
@@ -127,6 +117,8 @@ window.WebShell = function (dom) {
                 }
             });
         }
+        var BackSpacePrev = [27, 91, 63, 50, 53, 108, 13].map(function (e) { return String.fromCharCode(e) }).join('');
+        var BackSpaceNext = [27, 91, 48, 75, 27, 91, 63, 50, 53, 104].map(function (e) { return String.fromCharCode(e) }).join('');
 
         term.onData(function (data) {
             if (!isInput) return;
@@ -138,6 +130,13 @@ window.WebShell = function (dom) {
                 } else {
                     doLogin();
                 }
+            } else if (data.charCodeAt(0) == 127) {
+                if (tag == 1) {
+                    username = username.substr(0, username.length - 1);
+                    term.write(BackSpacePrev + "Web Shell login:" + username + BackSpaceNext);
+                } else {
+                    password = password.substr(0, password.length - 1);
+                }
             } else {
                 if (tag == 1) {
                     term.write(data);
@@ -148,7 +147,6 @@ window.WebShell = function (dom) {
             }
         });
     })();
-
 
 
     term.loadAddon(fitAddon);
@@ -164,7 +162,6 @@ window.WebShell = function (dom) {
     dom.oncontextmenu = function () {
         if (term.hasSelection()) {
             sendData(DataType.Data, term.getSelection());
-            // term.write(term.getSelection());
             return false;
         }
         return true;
