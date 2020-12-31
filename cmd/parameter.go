@@ -24,6 +24,7 @@ type Parameter struct {
 	ContentPath string
 	CrtFile     string
 	KeyFile     string
+	RootCrtFile string
 }
 
 // Init Parameter
@@ -42,8 +43,9 @@ func (parms *Parameter) Init() {
 	flag.StringVar(&(parms.Password), "p", "webshell", "password")
 	flag.StringVar(&(parms.Command), "cmd", "", "command cmd or bash")
 	flag.StringVar(&(parms.ContentPath), "cp", "", "content path")
-	flag.StringVar(&(parms.CrtFile), "crt", "", "crt file")
-	flag.StringVar(&(parms.KeyFile), "key", "", "key file")
+	flag.StringVar(&(parms.CrtFile), "C", "", "crt file")
+	flag.StringVar(&(parms.KeyFile), "K", "", "key file")
+	flag.StringVar(&(parms.RootCrtFile), "RC", "", "root crt file")
 
 	flag.Parse()
 	if help {
@@ -63,10 +65,10 @@ func (parms *Parameter) Run() {
 	if parms.Server {
 		s := new(server.WebShellServer)
 		s.Init(parms.Username, parms.Password, parms.Command, parms.ContentPath)
-		s.Run(parms.HTTPS, parms.Port, parms.CrtFile, parms.KeyFile)
+		s.Run(parms.HTTPS, parms.Port, parms.CrtFile, parms.KeyFile, parms.RootCrtFile)
 	} else if parms.Client {
 		c := new(client.WebShellClient)
-		c.Init(parms.HTTPS, parms.CrtFile)
+		c.Init(parms.HTTPS, parms.CrtFile, parms.KeyFile, parms.RootCrtFile)
 		c.Run(parms.HTTPS, parms.Username, parms.Password, parms.Host, parms.Port, parms.ContentPath)
 	}
 }
@@ -79,10 +81,6 @@ func (parms *Parameter) organize() {
 	}
 	if parms.Server && parms.HTTPS && (parms.CrtFile == "" || parms.KeyFile == "") {
 		println("the crt file and key file are required in server mode.")
-		os.Exit(1)
-	}
-	if parms.Client && parms.HTTPS && (parms.CrtFile == "") {
-		println("the crt file is required in client mode.")
 		os.Exit(1)
 	}
 	_, err := strconv.Atoi(parms.Port)
@@ -105,7 +103,6 @@ func (parms *Parameter) organize() {
 			os.Exit(1)
 		}
 	}
-
 }
 
 func printUsage() {

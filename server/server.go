@@ -1,11 +1,15 @@
 package server
 
 import (
+	"crypto/tls"
+	"log"
 	"net/http"
+
+	"github.com/jiangklijna/web-shell/lib"
 )
 
 // Version WebShell Server current version
-const Version = "1.2"
+const Version = "1.0"
 
 // Server Response header[Server]
 const Server = "web-shell-" + Version
@@ -34,14 +38,21 @@ func (s *WebShellServer) upgrade(ContentPath string, h http.Handler) http.Handle
 }
 
 // Run WebShell server
-func (s *WebShellServer) Run(https bool, port, crt, key string) {
+func (s *WebShellServer) Run(https bool, port, crt, key, rootcrt string) {
 	var err error
+	server := &http.Server{Addr: ":" + port, Handler: s}
 	if https {
-		err = http.ListenAndServeTLS(":"+port, crt, key, s)
+		if rootcrt != "" {
+			server.TLSConfig = &tls.Config{
+				ClientCAs:  lib.ReadCertPool(rootcrt),
+				ClientAuth: tls.RequireAndVerifyClientCert,
+			}
+		}
+		err = server.ListenAndServeTLS(crt, key)
 	} else {
-		err = http.ListenAndServe(":"+port, s)
+		err = server.ListenAndServe()
 	}
 	if err != nil {
-		println(err.Error())
+		log.Fatalln(err.Error())
 	}
 }

@@ -2,7 +2,6 @@ package client
 
 import (
 	"crypto/tls"
-	"crypto/x509"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -13,10 +12,11 @@ import (
 	"strconv"
 
 	"github.com/gorilla/websocket"
+	"github.com/jiangklijna/web-shell/lib"
 )
 
 // Version WebShell Client current version
-const Version = "1.1"
+const Version = "1.0"
 
 // UserAgent Request header[User-Agent]
 var UserAgent = fmt.Sprintf("web-shell-client/%s (%s; %s; %s)", Version, runtime.GOOS, runtime.GOARCH, runtime.Version())
@@ -28,17 +28,21 @@ type WebShellClient struct {
 }
 
 // Init http client
-func (c *WebShellClient) Init(https bool, crt string) {
+func (c *WebShellClient) Init(https bool, crt, key, rootcrt string) {
 	if https {
-		certBytes, err := ioutil.ReadFile(crt)
-		if err != nil {
-			panic("Unable to read cert.pem")
+		tlsConfig := &tls.Config{}
+		if crt != "" && key != "" && rootcrt != "" {
+			cliCrt, err := tls.LoadX509KeyPair(crt, key)
+			if err != nil {
+				log.Fatalln("Load crt or key file failed:", err.Error())
+			}
+			tlsConfig.RootCAs = lib.ReadCertPool(rootcrt)
+			tlsConfig.Certificates = []tls.Certificate{cliCrt}
+		} else if crt != "" {
+			tlsConfig.RootCAs = lib.ReadCertPool(crt)
+		} else {
+			tlsConfig.InsecureSkipVerify = true
 		}
-		clientCertPool := x509.NewCertPool()
-		if ok := clientCertPool.AppendCertsFromPEM(certBytes); !ok {
-			panic("failed to parse root certificate")
-		}
-		tlsConfig := &tls.Config{RootCAs: clientCertPool}
 		c.Client = &http.Client{Transport: &http.Transport{TLSClientConfig: tlsConfig}}
 		c.Dialer = &websocket.Dialer{TLSClientConfig: tlsConfig}
 	} else {
