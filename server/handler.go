@@ -53,14 +53,14 @@ func LoginHandler(username, password string) http.Handler {
 		clientIP := r.RemoteAddr[0:strings.LastIndex(r.RemoteAddr, ":")]
 		secret := lib.GenerateSecret(clientIP, r.UserAgent())
 
-		r.ParseForm()
-		token := r.Form.Get("token")
+		token := r.URL.Query().Get("token")
 		if token == "" {
 			w.Write([]byte("{\"code\":1,\"msg\":\"invalid token!\",\"secret\":\"" + secret + "\"}"))
 			return
 		}
 
-		time.Sleep(time.Duration(rand.Int63n(int64(time.Second / 2))))
+		const halfSecond = int64(time.Second / 2)
+		time.Sleep(time.Duration(rand.Int63n(halfSecond)))
 		correctToken := lib.GenerateToken(username, password, secret)
 
 		if token != correctToken {
