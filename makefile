@@ -1,20 +1,27 @@
 
 # run make/*.go
 
-build:
-	go run make/*.go build
+build: webshellmake
+	make/web-shell-make build
 
-down:
-	go run make/*.go down
+down: webshellmake
+	make/web-shell-make down
 
-gen:
-	go run make/*.go gen
+gen: webshellmake
+	make/web-shell-make gen
 
-debug:
-	go run make/*.go debug
+debug: webshellmake
+	make/web-shell-make debug
 
-run:
-	go run make/*.go run
+run: webshellmake
+	make/web-shell-make run
 
-clean:
-	go run make/*.go clean
+clean: webshellmake
+	make/web-shell-make clean
+
+help: webshellmake
+	make/web-shell-make help
+
+
+webshellmake:
+	cd make && go build

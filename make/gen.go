@@ -1,8 +1,9 @@
 package main
 
 import (
-	"bytes"
+	"io"
 	"io/ioutil"
+	"os"
 	"strconv"
 	"strings"
 	"time"
@@ -35,8 +36,11 @@ func MakeGen() {
 	genTime := strconv.FormatInt(time.Now().Unix(), 10)
 
 	MakeDown()
-	buf := bytes.Buffer{}
-	buf.WriteString(`package server
+	f, err := os.Create(staticGenGoFile)
+	if err != nil {
+		panic(err)
+	}
+	io.WriteString(f, `package server
 import (
 	"bytes"
 	"errors"
@@ -44,7 +48,7 @@ import (
 	"os"
 	"time"
 )
-var modtime = time.Unix(` + genTime + `, 0)
+var modtime = time.Unix(`+genTime+`, 0)
 var errNotDir = errors.New("Not a folder")
 // MemoryFile Read R file
 type MemoryFile struct {
@@ -98,52 +102,54 @@ func init() {
 }
 // R Static file resources
 var R = map[string][]byte{`)
-	type StaticFile struct {
-		isDir      bool
-		name, path string
-	}
-	var getFiles func(string, func(*StaticFile))
-	getFiles = func(dir string, callback func(*StaticFile)) {
-		fs, err := ioutil.ReadDir(dir)
-		if err != nil {
-			panic(err)
-		}
-		for _, f := range fs {
-			name := dir + "/" + f.Name()
-			sf := &StaticFile{f.IsDir(), name, name[len(staticDir)+1:]}
-			callback(sf)
-			if f.IsDir() {
-				getFiles(name, callback)
-			}
-		}
-	}
-	getFiles(staticDir, func(sf *StaticFile) {
+	getFiles(staticDir, func(sf *staticFile) {
 		if sf == nil {
 			return
 		}
 		if sf.isDir {
-			buf.WriteString("\n\t\"/" + sf.path)
-			buf.WriteString(`":nil,`)
+			io.WriteString(f, "\n\t\"/"+sf.path)
+			io.WriteString(f, `":nil,`)
 		} else {
 			bs, err := compressStatic(m, sf.name)
 			if err != nil {
 				println(sf.name)
 				panic(err)
 			}
-			buf.WriteString("\n\t\"/" + sf.path)
-			buf.WriteString(`":{`)
+			io.WriteString(f, "\n\t\"/"+sf.path)
+			io.WriteString(f, `":{`)
 			for _, b := range bs {
-				buf.WriteString(strconv.Itoa(int(b)))
-				buf.WriteString(",")
+				io.WriteString(f, strconv.Itoa(int(b)))
+				io.WriteString(f, ",")
 			}
-			buf.WriteString("},")
+			io.WriteString(f, "},")
 		}
 		println(sf.name, "generate successful")
 	})
-	buf.WriteString("\n\t\"/\":nil,")
-	buf.WriteString("\n}")
-	err := ioutil.WriteFile(staticGenGoFile, buf.Bytes(), 0662)
+	io.WriteString(f, "\n\t\"/\":nil,")
+	io.WriteString(f, "\n}")
+	if err := f.Close(); err != nil {
+		panic(err)
+	}
+}
+
+// staticFile file info
+type staticFile struct {
+	isDir      bool
+	name, path string
+}
+
+// getFiles func(string, func(*StaticFile))
+func getFiles(dir string, callback func(*staticFile)) {
+	fs, err := ioutil.ReadDir(dir)
 	if err != nil {
 		panic(err)
+	}
+	for _, f := range fs {
+		name := dir + "/" + f.Name()
+		sf := &staticFile{f.IsDir(), name, name[len(staticDir)+1:]}
+		callback(sf)
+		if f.IsDir() {
+			getFiles(name, callback)
+		}
 	}
 }
