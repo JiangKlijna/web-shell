@@ -6,9 +6,15 @@ Web Shell Powered by [gorilla/websocket](https://github.com/gorilla/websocket), 
 And windows need [rprichard/winpty](https://github.com/rprichard/winpty).
 
 ## Installation
+### from source code
 ```bash
-go get -u github.com/jiangklijna/web-shell
+git clone github.com/jiangklijna/web-shell
+cd web-shell
+make gen
+make
 ```
+### from release
+[releases](https://github.com/JiangKlijna/web-shell/releases)
 
 ## Help
 ```bash
