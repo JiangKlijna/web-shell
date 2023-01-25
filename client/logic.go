@@ -5,7 +5,6 @@ import (
 	"log"
 
 	"github.com/gorilla/websocket"
-	"github.com/jiangklijna/web-shell/lib"
 )
 
 // LoginServer get websocket path
@@ -15,12 +14,7 @@ func LoginServer(https bool, username, password, host, port, contentpath string,
 		protocol = "https"
 	}
 	var LoginURL = protocol + "://" + host + ":" + port + contentpath + "/login"
-	res, err := get(LoginURL)
-	if err != nil {
-		return "", err
-	}
-	token := lib.GenerateToken(username, password, res["secret"].(string))
-	data, err := get(LoginURL + "?token=" + token)
+	data, err := get(LoginURL + "?username=" + username + "&password=" + password)
 	if err != nil {
 		return "", err
 	}

@@ -8,9 +8,11 @@ import (
 	"strings"
 	"time"
 
+	paseto "aidanwoods.dev/go-paseto"
 	"github.com/gorilla/websocket"
-	"github.com/jiangklijna/web-shell/lib"
 )
+
+var sessionKey = paseto.NewV4SymmetricKey()
 
 // HTMLDirHandler FileServer
 func HTMLDirHandler() http.Handler {
@@ -31,17 +33,23 @@ func GetMethodHandler(next http.Handler) http.Handler {
 // VerifyHandler Login verification
 func VerifyHandler(username, password string, next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		path := strings.TrimPrefix(r.URL.Path, "/cmd/")
-		if len(path) < 10 {
-			w.WriteHeader(http.StatusNotFound)
-			return
+		if username == "" && password == "" {
+			// authentication disabled, permit all traffic
+		} else {
+			token := strings.TrimPrefix(r.URL.Path, "/cmd/")
+			if len(token) < 10 {
+				w.WriteHeader(http.StatusNotFound)
+				return
+			}
+
+			p := paseto.NewParser()
+			if _, err := p.ParseV4Local(sessionKey, token, nil); err != nil {
+				log.Printf("Invalid token: %v", err)
+				w.WriteHeader(http.StatusForbidden)
+				return
+			}
 		}
-		clientIP := r.RemoteAddr[0:strings.LastIndex(r.RemoteAddr, ":")]
-		_, _, correctPath := lib.GenerateAll(username, password, clientIP, r.UserAgent())
-		if path != correctPath {
-			w.WriteHeader(http.StatusForbidden)
-			return
-		}
+
 		next.ServeHTTP(w, r)
 	})
 }
@@ -50,26 +58,41 @@ func VerifyHandler(username, password string, next http.Handler) http.Handler {
 func LoginHandler(username, password string) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "text/json; charset=utf-8")
-		clientIP := r.RemoteAddr[0:strings.LastIndex(r.RemoteAddr, ":")]
-		secret := lib.GenerateSecret(clientIP, r.UserAgent())
 
-		token := r.URL.Query().Get("token")
-		if token == "" {
-			w.Write([]byte("{\"code\":1,\"msg\":\"invalid token!\",\"secret\":\"" + secret + "\"}"))
+		if username == "" || password == "" {
+			// Authentication disabled, return a success regardless
+			w.Write([]byte("{\"code\":0,\"msg\":\"Logged-in automatically (no authentication required)\",\"path\":\"noauth--login-not-required\"}"))
 			return
 		}
 
 		const halfSecond = int64(time.Second / 2)
 		time.Sleep(time.Duration(rand.Int63n(halfSecond)))
-		correctToken := lib.GenerateToken(username, password, secret)
 
-		if token != correctToken {
-			w.Write([]byte("{\"code\":1,\"msg\":\"Login incorrect!\",\"secret\":\"" + secret + "\"}"))
+		if token := r.URL.Query().Get("token"); token != "" {
+			p := paseto.NewParser()
+			if _, err := p.ParseV4Local(sessionKey, token, nil); err == nil {
+				log.Println("resuming session from stored token")
+				w.Write([]byte("{\"code\":0,\"msg\":\"login success!\",\"path\":\"" + token + "\"}"))
+				return
+			}
+		}
+
+		sentUser, sentPass := r.URL.Query().Get("username"), r.URL.Query().Get("password")
+
+		if username != sentUser || password != sentPass {
+			w.Write([]byte("{\"code\":1,\"msg\":\"Login incorrect!\"}"))
 			return
 		}
-		path := lib.GeneratePath(secret, token)
+
 		// login success
-		w.Write([]byte("{\"code\":0,\"msg\":\"login success!\",\"path\":\"" + path + "\"}"))
+		token := paseto.NewToken()
+
+		token.SetIssuedAt(time.Now())
+		token.SetNotBefore(time.Now())
+		token.SetExpiration(time.Now().Add(96 * time.Hour))
+		tokenBytes := token.V4Encrypt(sessionKey, nil)
+
+		w.Write([]byte("{\"code\":0,\"msg\":\"login success!\",\"path\":\"" + tokenBytes + "\"}"))
 	})
 }
 
@@ -127,7 +150,7 @@ func LoggingHandler(next http.Handler) http.Handler {
 		w.Header().Add("Server", Server)
 		next.ServeHTTP(w, r)
 		str := fmt.Sprintf(
-			"%s Comleted %s %s in %v from %s",
+			"%s Completed %s %s in %v from %s",
 			start.Format("2006/01/02 15:04:05"),
 			r.Method,
 			r.URL.Path,

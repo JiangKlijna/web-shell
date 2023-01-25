@@ -101,14 +101,13 @@ window.WebShell = function (dom) {
 
         var doLogin = function () {
             isInput = false;
-            var token = md5(secret + md5(username + secret + password) + secret);
-            GetByAjax("login?token=" + token, function (data) {
+            GetByAjax("login?username=" + username + "&password=" + password, function (data) {
                 tag = 1;
                 username = "";
                 password = "";
                 if (data.code == 0) {
                     isInput = false;
-                    sessionStorage.setItem("web-shell-token", token);
+                    sessionStorage.setItem("web-shell-token", data.path);
                     onLoginSuccess(data.path);
                 } else {
                     isInput = true;
