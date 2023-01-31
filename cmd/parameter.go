@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"flag"
+	"fmt"
 	"os"
 	"runtime"
 	"strconv"
@@ -47,6 +48,7 @@ func (parms *Parameter) Init() {
 	flag.StringVar(&(parms.KeyFile), "K", "", "key file")
 	flag.StringVar(&(parms.RootCrtFile), "RC", "", "root crt file")
 
+	os.Args = organizeOsArgs(os.Args)
 	flag.Parse()
 	if help {
 		printUsage()
@@ -73,10 +75,11 @@ func (parms *Parameter) Run() {
 	}
 }
 
-// Organize command line parameters
+// organize command line parameters
 func (parms *Parameter) organize() {
 	if (parms.Server && parms.Client) || (!parms.Server && !parms.Client) {
-		println("select server mode OR client mode.")
+		println("please select server mode OR client mode.")
+		println("please enter the -s or -c parameter.")
 		os.Exit(1)
 	}
 	if parms.Server && parms.HTTPS && (parms.CrtFile == "" || parms.KeyFile == "") {
@@ -92,6 +95,12 @@ func (parms *Parameter) organize() {
 	if parms.Command == "" {
 		parms.Command = defaultCommand()
 	}
+	if parms.Username == "" {
+		parms.Username = getInput("Username")
+	}
+	if parms.Password == "" {
+		parms.Password = getInput("Password")
+	}
 	parms.ContentPath = strings.Trim(parms.ContentPath, " ")
 	if len(parms.ContentPath) > 0 {
 		if parms.ContentPath[0] != '/' {
@@ -99,7 +108,7 @@ func (parms *Parameter) organize() {
 			os.Exit(1)
 		}
 		if parms.ContentPath[len(parms.ContentPath)-1] == '/' {
-			println("ContentPath connot end with /, not", parms.ContentPath)
+			println("ContentPath cannot end with /, not", parms.ContentPath)
 			os.Exit(1)
 		}
 	}
@@ -121,9 +130,57 @@ func printVersion() {
 	println("web-shell client version:", client.Version)
 }
 
+// defaultCommand Get the default shell
 func defaultCommand() string {
 	if runtime.GOOS == "windows" {
 		return "cmd"
 	}
 	return "bash"
+}
+
+// getInput Get input from the command line
+func getInput(key string) string {
+	pwd := ""
+	fmt.Print("Enter " + key + ": ")
+	fmt.Scanln(&pwd)
+	if pwd == "" {
+		return getInput(key)
+	}
+	return pwd
+}
+
+// organizeOsArgs Organize os.Args
+// The parameters -u, -p are allowed to be empty
+func organizeOsArgs(osArgs []string) []string {
+	args := make([]string, 0)
+	for i, arg := range osArgs {
+		args = append(args, arg)
+		if arg == "-u" {
+			if len(os.Args) <= i+1 {
+				args = append(args, "")
+				return args
+			}
+			u := os.Args[i+1]
+			if strings.HasPrefix(u, "-") {
+				u = strings.TrimLeft(u, "-")
+				if flag.CommandLine.Lookup(u) != nil {
+					args = append(args, "")
+				}
+			}
+		}
+		if arg == "-p" {
+			if len(os.Args) >= i+1 {
+				args = append(args, "")
+				return args
+			}
+			p := os.Args[i+1]
+			if strings.HasPrefix(p, "-") {
+				p = strings.TrimLeft(p, "-")
+				if flag.CommandLine.Lookup(p) != nil {
+					args = append(args, "")
+				}
+			}
+		}
+	}
+	return args
 }
