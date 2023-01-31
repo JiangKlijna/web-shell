@@ -9,7 +9,7 @@ import (
 )
 
 // Version WebShell Server current version
-const Version = "1.0"
+const Version = "2.0"
 
 // Server Response header[Server]
 const Server = "web-shell-" + Version
