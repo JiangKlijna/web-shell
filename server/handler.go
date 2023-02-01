@@ -1,7 +1,9 @@
 package server
 
 import (
+	"crypto/md5"
 	"fmt"
+	"github.com/jiangklijna/web-shell/lib"
 	"log"
 	"math/rand"
 	"net/http"
@@ -56,14 +58,18 @@ func VerifyHandler(username, password string, next http.Handler) http.Handler {
 
 // LoginHandler Login interface
 func LoginHandler(username, password string) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "text/json; charset=utf-8")
-
-		if username == "" || password == "" {
+	if username == "" || password == "" {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			// Authentication disabled, return a success regardless
 			w.Write([]byte("{\"code\":0,\"msg\":\"Logged-in automatically (no authentication required)\",\"path\":\"noauth--login-not-required\"}"))
-			return
-		}
+		})
+	}
+
+	md5User := lib.HashCalculation(md5.New(), username)
+	md5Pass := lib.HashCalculation(md5.New(), password)
+
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "text/json; charset=utf-8")
 
 		const halfSecond = int64(time.Second / 2)
 		time.Sleep(time.Duration(rand.Int63n(halfSecond)))
@@ -79,7 +85,7 @@ func LoginHandler(username, password string) http.Handler {
 
 		sentUser, sentPass := r.URL.Query().Get("username"), r.URL.Query().Get("password")
 
-		if username != sentUser || password != sentPass {
+		if md5User != sentUser || md5Pass != sentPass {
 			w.Write([]byte("{\"code\":1,\"msg\":\"Login incorrect!\"}"))
 			return
 		}

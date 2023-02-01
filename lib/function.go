@@ -2,9 +2,17 @@ package lib
 
 import (
 	"crypto/x509"
+	"fmt"
+	"hash"
 	"io/ioutil"
 	"log"
 )
+
+// HashCalculation calculat hash
+func HashCalculation(h hash.Hash, val string) string {
+	h.Write([]byte(val))
+	return fmt.Sprintf("%x", h.Sum(nil))
+}
 
 // ReadCertPool get CertPool by crt file
 func ReadCertPool(crt string) *x509.CertPool {

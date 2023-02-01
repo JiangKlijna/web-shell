@@ -1,7 +1,9 @@
 package client
 
 import (
+	"crypto/md5"
 	"errors"
+	"github.com/jiangklijna/web-shell/lib"
 	"log"
 
 	"github.com/gorilla/websocket"
@@ -13,8 +15,11 @@ func LoginServer(https bool, username, password, host, port, contentpath string,
 	if https {
 		protocol = "https"
 	}
+	md5User := lib.HashCalculation(md5.New(), username)
+	md5Pass := lib.HashCalculation(md5.New(), password)
+
 	var LoginURL = protocol + "://" + host + ":" + port + contentpath + "/login"
-	data, err := get(LoginURL + "?username=" + username + "&password=" + password)
+	data, err := get(LoginURL + "?username=" + md5User + "&password=" + md5Pass)
 	if err != nil {
 		return "", err
 	}

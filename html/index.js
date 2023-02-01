@@ -80,7 +80,6 @@ window.WebShell = function (dom) {
     (function () {
         var isInput = true;
         var tag = 1;
-        var secret = "";
         var username = "";
         var password = "";
 
@@ -92,7 +91,6 @@ window.WebShell = function (dom) {
                     isInput = false;
                     onLoginSuccess(data.path);
                 } else {
-                    secret = data.secret;
                     isInput = true;
                     term.write("Web Shell login:");
                 }
@@ -101,7 +99,7 @@ window.WebShell = function (dom) {
 
         var doLogin = function () {
             isInput = false;
-            GetByAjax("login?username=" + username + "&password=" + password, function (data) {
+            GetByAjax("login?username=" + md5(username) + "&password=" + md5(password), function (data) {
                 tag = 1;
                 username = "";
                 password = "";
