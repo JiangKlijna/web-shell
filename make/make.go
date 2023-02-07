@@ -74,6 +74,8 @@ func main() {
 			return MakeDebug
 		case "down":
 			return MakeDown
+		case "winpty":
+			return MakeWinpty
 		case "gen":
 			return MakeGen
 		case "build":
