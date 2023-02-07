@@ -156,11 +156,11 @@ func organizeOsArgs(osArgs []string) []string {
 	for i, arg := range osArgs {
 		args = append(args, arg)
 		if arg == "-u" {
-			if len(os.Args) <= i+1 {
+			if len(osArgs) <= i+1 {
 				args = append(args, "")
 				return args
 			}
-			u := os.Args[i+1]
+			u := osArgs[i+1]
 			if strings.HasPrefix(u, "-") {
 				u = strings.TrimLeft(u, "-")
 				if flag.CommandLine.Lookup(u) != nil {
@@ -169,11 +169,11 @@ func organizeOsArgs(osArgs []string) []string {
 			}
 		}
 		if arg == "-p" {
-			if len(os.Args) >= i+1 {
+			if len(osArgs) <= i+1 {
 				args = append(args, "")
 				return args
 			}
-			p := os.Args[i+1]
+			p := osArgs[i+1]
 			if strings.HasPrefix(p, "-") {
 				p = strings.TrimLeft(p, "-")
 				if flag.CommandLine.Lookup(p) != nil {
