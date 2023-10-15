@@ -28,4 +28,4 @@ ENV PORT=2020
 ENV USER=webshell
 ENV PASSWORD=webshell
 
-ENTRYPOINT ["/web-shell","-s","-H $HOST","-P $PORT","-u $USER","-p $PASSWORD"]
+ENTRYPOINT ["/web-shell","-s","-H","$HOST","-P","$PORT","-u","$USER","-p","$PASSWORD"]
