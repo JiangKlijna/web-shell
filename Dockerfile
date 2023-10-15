@@ -1,14 +1,13 @@
 FROM golang:1.21 AS build-env
 WORKDIR /app
 COPY  . /app
-RUN useradd -u 10001 webshell
+RUN useradd -u 1000 webshell
 RUN go mod tidy
 RUN go mod vendor
 RUN make gen
 RUN make
 
 FROM ubuntu:22.04
-
 # Upgrade system & install packages
 ENV DEBIAN_FRONTEND=noninteractive
 ENV TERM=linux
