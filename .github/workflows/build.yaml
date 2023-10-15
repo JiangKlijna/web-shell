@@ -9,29 +9,21 @@ jobs:
     steps:
       - name: Checkout Repo
         uses: actions/checkout@v2
-      - name: Login Build Sign Push
+      - name: Install Cosign
+        uses: sigstore/cosign-installer@main
+        with:
+          cosign-release: 'v2.2.0'
+      - name: Login Build Push
         run: |
           echo "${{ secrets.GITHUB_TOKEN }}" | docker login ${GHR} -u ${{ github.actor }} --password-stdin
           VERSION=$(echo "${{ github.ref }}" | sed -e 's,.*/\(.*\),\1,')
           export DOCKER_BUILDKIT=1
           docker build -f Dockerfile -t ${GHR}/${{ github.repository_owner }}/${IMAGE}/${IMAGE}:${VERSION}
           docker push ${GHR}/${{ github.repository_owner }}/${IMAGE}/${IMAGE}:${VERSION}
-        env:
-          GHR: ghcr.io
-          IMAGE: web-shell
-  sign:
-    if: ${{COSIGN_KEY}}
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout Repo
-        uses: actions/checkout@v2
-      - name: Install Cosign
-        uses: sigstore/cosign-installer@main
-        with:
-          cosign-release: 'v2.2.0'
-      - name: Login Build Sign Push
+      - name: Sign
+        if: ${{secrets.COSIGN_KEY != null}}
         run: |
-          echo "${{ secrets.GITHUB_TOKEN }}" | cosignr login ${GHR} -u ${{ github.actor }} --password-stdin
+          #echo "${{ secrets.GITHUB_TOKEN }}" | cosignr login ${GHR} -u ${{ github.actor }} --password-stdin
           cosign sign --key env://COSIGN_KEY --tlog-upload=false ${GHR}/${{ github.repository_owner }}/${IMAGE}/${IMAGE}:${VERSION}
         env:
           GHR: ghcr.io
