@@ -18,7 +18,7 @@ jobs:
           echo "${{ secrets.GITHUB_TOKEN }}" | docker login ${GHR} -u ${{ github.actor }} --password-stdin
           VERSION=$(echo "${{ github.ref }}" | sed -e 's,.*/\(.*\),\1,')
           export DOCKER_BUILDKIT=1
-          docker build -f Dockerfile -t ${GHR}/${{ github.repository_owner }}/${IMAGE}/${IMAGE}:${VERSION}
+          docker build -f Dockerfile -t ${GHR}/${{ github.repository_owner }}/${IMAGE}/${IMAGE}:${VERSION} .
           docker push ${GHR}/${{ github.repository_owner }}/${IMAGE}/${IMAGE}:${VERSION}
           echo "needs the cosign key here"
           #echo "${{ secrets.GITHUB_TOKEN }}" | cosignr login ${GHR} -u ${{ github.actor }} --password-stdin
