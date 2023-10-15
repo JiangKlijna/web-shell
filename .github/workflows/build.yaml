@@ -21,10 +21,10 @@ jobs:
           docker build -f Dockerfile -t ${GHR}/${{ github.repository_owner }}/${IMAGE}/${IMAGE}:${VERSION}
           docker push ${GHR}/${{ github.repository_owner }}/${IMAGE}/${IMAGE}:${VERSION}
       - name: Sign
-        if: ${{COSIGN_KEY != null}}
         run: |
+          echo "needs the cosign key here"
           #echo "${{ secrets.GITHUB_TOKEN }}" | cosignr login ${GHR} -u ${{ github.actor }} --password-stdin
-          cosign sign --key env://COSIGN_KEY --tlog-upload=false ${GHR}/${{ github.repository_owner }}/${IMAGE}/${IMAGE}:${VERSION}
+          #cosign sign --key env://COSIGN_KEY --tlog-upload=false ${GHR}/${{ github.repository_owner }}/${IMAGE}/${IMAGE}:${VERSION}
         env:
           GHR: ghcr.io
           IMAGE: web-shell
