@@ -53,5 +53,19 @@ Options:
   -v    show version and exit
 ```
 
+## Installed on Kubernetes
+
+Apply an example [StatefulSet](./manifests/statefulset.yaml) with Service & RBAC to your cluster:
+
+```bash
+kubectl apply -f manifests/statefulset.yaml
+```
+
+Service will be reachable on Port 80:
+
+<img src="webshell.png" alt="webshell"/>
+
+You can extend RBAC setting to reach more resource in the cluster. Or expose the Service with Ingress.
+
 ## License
 Source code in **web-shell** is available under the [GPL-3.0 License](https://github.com/JiangKlijna/web-shell/blob/master/LICENSE).
