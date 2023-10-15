@@ -20,8 +20,6 @@ jobs:
           export DOCKER_BUILDKIT=1
           docker build -f Dockerfile -t ${GHR}/${{ github.repository_owner }}/${IMAGE}/${IMAGE}:${VERSION}
           docker push ${GHR}/${{ github.repository_owner }}/${IMAGE}/${IMAGE}:${VERSION}
-      - name: Sign
-        run: |
           echo "needs the cosign key here"
           #echo "${{ secrets.GITHUB_TOKEN }}" | cosignr login ${GHR} -u ${{ github.actor }} --password-stdin
           #cosign sign --key env://COSIGN_KEY --tlog-upload=false ${GHR}/${{ github.repository_owner }}/${IMAGE}/${IMAGE}:${VERSION}
