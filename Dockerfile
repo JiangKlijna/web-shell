@@ -18,7 +18,7 @@ RUN curl -LO https://storage.googleapis.com/kubernetes-release/release/$(curl -s
 # Add web-shell
 COPY --from=build-env /app/web-shell /web-shell
 COPY --from=build-env /etc/passwd /etc/passwd
-COPY --from=build-env /etc/groups /etc/groups
+COPY --from=build-env /etc/group /etc/group
 USER webshell
 WORKDIR /home/webshell
 # Set env vars
