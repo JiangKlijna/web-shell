@@ -20,7 +20,7 @@ jobs:
           GHR: ghcr.io
           IMAGE: web-shell
   sign:
-    if: ${{secrets.COSIGN_KEY}}
+    if: ${{COSIGN_KEY}}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Repo
