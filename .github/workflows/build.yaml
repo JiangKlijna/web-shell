@@ -21,7 +21,7 @@ jobs:
           docker build -f Dockerfile -t ${GHR}/${{ github.repository_owner }}/${IMAGE}/${IMAGE}:${VERSION}
           docker push ${GHR}/${{ github.repository_owner }}/${IMAGE}/${IMAGE}:${VERSION}
       - name: Sign
-        if: ${{secrets.COSIGN_KEY != null}}
+        if: ${{COSIGN_KEY != null}}
         run: |
           #echo "${{ secrets.GITHUB_TOKEN }}" | cosignr login ${GHR} -u ${{ github.actor }} --password-stdin
           cosign sign --key env://COSIGN_KEY --tlog-upload=false ${GHR}/${{ github.repository_owner }}/${IMAGE}/${IMAGE}:${VERSION}
