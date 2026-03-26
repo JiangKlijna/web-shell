@@ -16,7 +16,7 @@ import (
 )
 
 // Version WebShell Client current version
-const Version = "1.0"
+const Version = "2.0"
 
 // UserAgent Request header[User-Agent]
 var UserAgent = fmt.Sprintf("web-shell-client/%s (%s; %s; %s)", Version, runtime.GOOS, runtime.GOARCH, runtime.Version())

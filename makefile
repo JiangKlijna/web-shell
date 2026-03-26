@@ -7,6 +7,9 @@ build: webshellmake
 down: webshellmake
 	make/web-shell-make down
 
+winpty: webshellmake
+	make/web-shell-make winpty
+
 gen: webshellmake
 	make/web-shell-make gen
 

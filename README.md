@@ -11,6 +11,8 @@ And windows need [rprichard/winpty](https://github.com/rprichard/winpty).
 git clone github.com/jiangklijna/web-shell
 cd web-shell
 make gen
+# If Windows, don't forget to make winpty
+# make winpty
 make
 ```
 ### from release
