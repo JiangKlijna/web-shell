@@ -8,6 +8,8 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"sync"
+	"time"
 )
 
 // HashCalculation calculat hash
@@ -41,4 +43,21 @@ func HttpWriteJSON(w http.ResponseWriter, statusCode int, data interface{}) {
 		return
 	}
 	w.Write(bytes)
+}
+
+func NewRateLimiter(interval time.Duration) func() bool {
+	var mu sync.Mutex
+	var lastReq time.Time
+
+	return func() bool {
+		mu.Lock()
+		defer mu.Unlock()
+
+		now := time.Now()
+		if now.Sub(lastReq) < interval {
+			return false
+		}
+		lastReq = now
+		return true
+	}
 }
