@@ -7,9 +7,9 @@ import (
 	"github.com/jiangklijna/web-shell/lib"
 	"io"
 	"log"
-	"math/rand"
 	"net/http"
 	"strings"
+	"sync"
 	"time"
 
 	paseto "aidanwoods.dev/go-paseto"
@@ -17,6 +17,24 @@ import (
 )
 
 var sessionKey = paseto.NewV4SymmetricKey()
+
+var (
+	rateLimitMu    sync.RWMutex
+	rateLimitMap   = make(map[string]time.Time)
+	rateLimitDelay = time.Second
+)
+
+func checkRateLimit(ip string) bool {
+	rateLimitMu.Lock()
+	defer rateLimitMu.Unlock()
+
+	now := time.Now()
+	if last, ok := rateLimitMap[ip]; ok && now.Sub(last) < rateLimitDelay {
+		return false
+	}
+	rateLimitMap[ip] = now
+	return true
+}
 
 // HTMLDirHandler FileServer
 func HTMLDirHandler() http.Handler {
@@ -85,8 +103,11 @@ func LoginHandler(username, password string) http.Handler {
 	sha256Pass := lib.HashCalculation(sha256.New(), password)
 
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		const halfSecond = int64(time.Second / 2)
-		time.Sleep(time.Duration(rand.Int63n(halfSecond)))
+		ip := strings.Split(r.RemoteAddr, ":")[0]
+		if !checkRateLimit(ip) {
+			lib.HttpWriteJSON(w, http.StatusTooManyRequests, lib.LoginResult{Code: 1, Msg: "Too many requests"})
+			return
+		}
 
 		body, err := io.ReadAll(r.Body)
 		if err != nil {
