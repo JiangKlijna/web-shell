@@ -6,7 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"log"
 	"net/http"
 	"runtime"
@@ -83,7 +83,7 @@ func (c *WebShellClient) PostJSON(url string, body []byte) (lib.LoginResult, err
 	if res.StatusCode < 200 || res.StatusCode >= 300 {
 		return lib.LoginResult{}, errors.New("response status is " + strconv.Itoa(res.StatusCode))
 	}
-	respBytes, err := ioutil.ReadAll(res.Body)
+	respBytes, err := io.ReadAll(res.Body)
 	if err != nil {
 		return lib.LoginResult{}, err
 	}

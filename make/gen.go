@@ -2,7 +2,6 @@ package main
 
 import (
 	"io"
-	"io/ioutil"
 	"os"
 	"strconv"
 	"strings"
@@ -16,7 +15,7 @@ import (
 
 func compressStatic(m *minify.M, filename string) ([]byte, error) {
 	ext := last(strings.Split(filename, "."))
-	bs, err := ioutil.ReadFile(filename)
+	bs, err := os.ReadFile(filename)
 	if err != nil {
 		return nil, err
 	}
@@ -140,7 +139,7 @@ type staticFile struct {
 
 // getFiles func(string, func(*StaticFile))
 func getFiles(dir string, callback func(*staticFile)) {
-	fs, err := ioutil.ReadDir(dir)
+	fs, err := os.ReadDir(dir)
 	if err != nil {
 		panic(err)
 	}

@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/jiangklijna/web-shell/lib"
-	"io/ioutil"
+	"io"
 	"log"
 	"math/rand"
 	"net/http"
@@ -88,7 +88,7 @@ func LoginHandler(username, password string) http.Handler {
 		const halfSecond = int64(time.Second / 2)
 		time.Sleep(time.Duration(rand.Int63n(halfSecond)))
 
-		body, err := ioutil.ReadAll(r.Body)
+		body, err := io.ReadAll(r.Body)
 		if err != nil {
 			lib.HttpWriteJSON(w, http.StatusBadRequest, lib.LoginResult{Code: 1, Msg: "Invalid request body"})
 			return

@@ -5,9 +5,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"hash"
-	"io/ioutil"
 	"log"
 	"net/http"
+	"os"
 )
 
 // HashCalculation calculat hash
@@ -18,7 +18,7 @@ func HashCalculation(h hash.Hash, val string) string {
 
 // ReadCertPool get CertPool by crt file
 func ReadCertPool(crt string) *x509.CertPool {
-	_crt, err := ioutil.ReadFile(crt)
+	_crt, err := os.ReadFile(crt)
 	if err != nil {
 		log.Fatalln("Read crt file failed:", err.Error())
 	}
