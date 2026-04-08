@@ -1,7 +1,8 @@
 package client
 
 import (
-	"crypto/md5"
+	"crypto/sha256"
+	"encoding/json"
 	"errors"
 	"github.com/jiangklijna/web-shell/lib"
 	"log"
@@ -10,23 +11,31 @@ import (
 )
 
 // LoginServer get websocket path
-func LoginServer(https bool, username, password, host, port, contentpath string, get func(url string) (map[string]interface{}, error)) (string, error) {
+func LoginServer(https bool, username, password, host, port, contentpath string, post func(url string, body []byte) (lib.LoginResult, error)) (string, error) {
 	protocol := "http"
 	if https {
 		protocol = "https"
 	}
-	md5User := lib.HashCalculation(md5.New(), username)
-	md5Pass := lib.HashCalculation(md5.New(), password)
+	sha256User := lib.HashCalculation(sha256.New(), username)
+	sha256Pass := lib.HashCalculation(sha256.New(), password)
 
-	var LoginURL = protocol + "://" + host + ":" + port + contentpath + "/login"
-	data, err := get(LoginURL + "?username=" + md5User + "&password=" + md5Pass)
+	LoginURL := protocol + "://" + host + ":" + port + contentpath + "/login"
+	reqBody := lib.LoginRequest{
+		Username: sha256User,
+		Password: sha256Pass,
+	}
+	bodyBytes, err := json.Marshal(reqBody)
 	if err != nil {
 		return "", err
 	}
-	if data["code"] != 0.0 {
-		return "", errors.New(data["msg"].(string))
+	result, err := post(LoginURL, bodyBytes)
+	if err != nil {
+		return "", err
 	}
-	return data["path"].(string), nil
+	if result.Code != 0 {
+		return "", errors.New(result.Msg)
+	}
+	return result.Path, nil
 }
 
 // ConnectSocket c

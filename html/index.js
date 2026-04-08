@@ -19,16 +19,24 @@
     W.NewTerminal = function () {
         return new Terminal({ useStyle: true, screenKeys: true });
     };
-    W.GetByAjax = function (url, callback) {
-        var ajax = new XMLHttpRequest();
-        ajax.open("GET", url);
-        ajax.onreadystatechange = function () {
-            if (ajax.readyState == 4 && ajax.status == 200) {
-                callback(JSON.parse(ajax.responseText), ajax);
-            }
-        }
-        ajax.send();
-    }
+    
+    W.sha256 = async function (text) {
+        var buffer = new TextEncoder('utf-8').encode(text);
+        var hash = await crypto.subtle.digest('SHA-256', buffer);
+        var hexArray = Array.prototype.map.call(new Uint8Array(hash), function (byte) {
+            return byte.toString(16).padStart(2, '0');
+        });
+        return hexArray.join('');
+    };
+
+    W.postJSON = async function (url, data) {
+        var response = await fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        });
+        return await response.json();
+    };
 })(window);
 
 // web-shell login:
@@ -83,37 +91,37 @@ window.WebShell = function (dom) {
         var username = "";
         var password = "";
 
-        (function () {
+        (async function () {
             isInput = false;
             var token = ('web-shell-token' in sessionStorage) ? sessionStorage.getItem("web-shell-token") : '';
-            GetByAjax("login?token=" + token, function (data) {
-                if (data.code == 0) {
-                    isInput = false;
-                    onLoginSuccess(data.path);
-                } else {
-                    isInput = true;
-                    term.write("Web Shell login:");
-                }
-            });
+            var data = await postJSON("login", { token: token });
+            if (data.code == 0) {
+                onLoginSuccess(data.path);
+            } else {
+                isInput = true;
+                term.write("Web Shell login:");
+            }
         })();
 
-        var doLogin = function () {
+        var doLogin = async function () {
             isInput = false;
-            GetByAjax("login?username=" + md5(username) + "&password=" + md5(password), function (data) {
-                tag = 1;
-                username = "";
-                password = "";
-                if (data.code == 0) {
-                    isInput = false;
-                    sessionStorage.setItem("web-shell-token", data.path);
-                    onLoginSuccess(data.path);
-                } else {
-                    isInput = true;
-                    term.writeln(data.msg);
-                    term.write("\nWeb Shell login:");
-                }
-            });
-        }
+            var hashedUser = await sha256(username);
+            var hashedPass = await sha256(password);
+            var data = await postJSON("login", { username: hashedUser, password: hashedPass });
+            tag = 1;
+            username = "";
+            password = "";
+            if (data.code == 0) {
+                isInput = false;
+                sessionStorage.setItem("web-shell-token", data.path);
+                onLoginSuccess(data.path);
+            } else {
+                isInput = true;
+                term.writeln(data.msg);
+                term.write("\nWeb Shell login:");
+            }
+        };
+
         var BackSpacePrev = [27, 91, 63, 50, 53, 108, 13].map(function (e) { return String.fromCharCode(e) }).join('');
         var BackSpaceNext = [27, 91, 48, 75, 27, 91, 63, 50, 53, 104].map(function (e) { return String.fromCharCode(e) }).join('');
 

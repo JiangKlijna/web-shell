@@ -1,9 +1,11 @@
 package server
 
 import (
-	"crypto/md5"
+	"crypto/sha256"
+	"encoding/json"
 	"fmt"
 	"github.com/jiangklijna/web-shell/lib"
+	"io/ioutil"
 	"log"
 	"math/rand"
 	"net/http"
@@ -25,6 +27,17 @@ func HTMLDirHandler() http.Handler {
 func GetMethodHandler(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != "GET" {
+			w.WriteHeader(http.StatusMethodNotAllowed)
+			return
+		}
+		next.ServeHTTP(w, r)
+	})
+}
+
+// PostMethodHandler Only allow POST requests
+func PostMethodHandler(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != "POST" {
 			w.WriteHeader(http.StatusMethodNotAllowed)
 			return
 		}
@@ -60,45 +73,54 @@ func VerifyHandler(username, password string, next http.Handler) http.Handler {
 func LoginHandler(username, password string) http.Handler {
 	if username == "" || password == "" {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			// Authentication disabled, return a success regardless
-			w.Write([]byte("{\"code\":0,\"msg\":\"Logged-in automatically (no authentication required)\",\"path\":\"noauth--login-not-required\"}"))
+			lib.HttpWriteJSON(w, 0, lib.LoginResult{
+				Code: 0,
+				Msg:  "Logged-in automatically (no authentication required)",
+				Path: "noauth--login-not-required",
+			})
 		})
 	}
 
-	md5User := lib.HashCalculation(md5.New(), username)
-	md5Pass := lib.HashCalculation(md5.New(), password)
+	sha256User := lib.HashCalculation(sha256.New(), username)
+	sha256Pass := lib.HashCalculation(sha256.New(), password)
 
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "text/json; charset=utf-8")
-
 		const halfSecond = int64(time.Second / 2)
 		time.Sleep(time.Duration(rand.Int63n(halfSecond)))
 
-		if token := r.URL.Query().Get("token"); token != "" {
+		body, err := ioutil.ReadAll(r.Body)
+		if err != nil {
+			lib.HttpWriteJSON(w, http.StatusBadRequest, lib.LoginResult{Code: 1, Msg: "Invalid request body"})
+			return
+		}
+
+		var req lib.LoginRequest
+		if err := json.Unmarshal(body, &req); err != nil {
+			lib.HttpWriteJSON(w, http.StatusBadRequest, lib.LoginResult{Code: 1, Msg: "Invalid JSON"})
+			return
+		}
+
+		if req.Token != "" {
 			p := paseto.NewParser()
-			if _, err := p.ParseV4Local(sessionKey, token, nil); err == nil {
+			if _, err := p.ParseV4Local(sessionKey, req.Token, nil); err == nil {
 				log.Println("resuming session from stored token")
-				w.Write([]byte("{\"code\":0,\"msg\":\"login success!\",\"path\":\"" + token + "\"}"))
+				lib.HttpWriteJSON(w, 0, lib.LoginResult{Code: 0, Msg: "login success!", Path: req.Token})
 				return
 			}
 		}
 
-		sentUser, sentPass := r.URL.Query().Get("username"), r.URL.Query().Get("password")
-
-		if md5User != sentUser || md5Pass != sentPass {
-			w.Write([]byte("{\"code\":1,\"msg\":\"Login incorrect!\"}"))
+		if sha256User != req.Username || sha256Pass != req.Password {
+			lib.HttpWriteJSON(w, 0, lib.LoginResult{Code: 1, Msg: "Login incorrect!"})
 			return
 		}
 
-		// login success
-		token := paseto.NewToken()
+		tokenObj := paseto.NewToken()
+		tokenObj.SetIssuedAt(time.Now())
+		tokenObj.SetNotBefore(time.Now())
+		tokenObj.SetExpiration(time.Now().Add(96 * time.Hour))
+		tokenBytes := tokenObj.V4Encrypt(sessionKey, nil)
 
-		token.SetIssuedAt(time.Now())
-		token.SetNotBefore(time.Now())
-		token.SetExpiration(time.Now().Add(96 * time.Hour))
-		tokenBytes := token.V4Encrypt(sessionKey, nil)
-
-		w.Write([]byte("{\"code\":0,\"msg\":\"login success!\",\"path\":\"" + tokenBytes + "\"}"))
+		lib.HttpWriteJSON(w, 0, lib.LoginResult{Code: 0, Msg: "login success!", Path: tokenBytes})
 	})
 }
 

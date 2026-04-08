@@ -1,6 +1,7 @@
 package client
 
 import (
+	"bytes"
 	"crypto/tls"
 	"encoding/json"
 	"errors"
@@ -53,7 +54,7 @@ func (c *WebShellClient) Init(https bool, crt, key, rootcrt string) {
 
 // Run WebShellClient
 func (c *WebShellClient) Run(https bool, username, password, host, post, contentpath string) {
-	path, err := LoginServer(https, username, password, host, post, contentpath, c.GetJSON)
+	path, err := LoginServer(https, username, password, host, post, contentpath, c.PostJSON)
 	if err != nil {
 		log.Println("Login to Server failed:", err.Error())
 		return
@@ -61,33 +62,34 @@ func (c *WebShellClient) Run(https bool, username, password, host, post, content
 	ConnectSocket(https, host, post, contentpath, path, UserAgent, c.GetWebsocket)
 }
 
-// GetRes http get request
-func (c *WebShellClient) GetRes(url string) (*http.Response, error) {
-	req, err := http.NewRequest("GET", url, nil)
+// PostRes http post request
+func (c *WebShellClient) PostRes(url string, body []byte) (*http.Response, error) {
+	req, err := http.NewRequest("POST", url, bytes.NewReader(body))
 	req.Header.Set("User-Agent", UserAgent)
+	req.Header.Set("Content-Type", "application/json")
 	if err != nil {
 		return nil, err
 	}
 	return c.Client.Do(req)
 }
 
-// GetJSON http get request and parse JSON
-func (c *WebShellClient) GetJSON(url string) (map[string]interface{}, error) {
-	res, err := c.GetRes(url)
+// PostJSON http post request and parse JSON
+func (c *WebShellClient) PostJSON(url string, body []byte) (lib.LoginResult, error) {
+	res, err := c.PostRes(url, body)
 	if err != nil {
-		return nil, err
+		return lib.LoginResult{}, err
 	}
 	defer res.Body.Close()
 	if res.StatusCode < 200 || res.StatusCode >= 300 {
-		return nil, errors.New("response status is " + strconv.Itoa(res.StatusCode))
+		return lib.LoginResult{}, errors.New("response status is " + strconv.Itoa(res.StatusCode))
 	}
-	bytes, err := ioutil.ReadAll(res.Body)
+	respBytes, err := ioutil.ReadAll(res.Body)
 	if err != nil {
-		return nil, err
+		return lib.LoginResult{}, err
 	}
-	data := make(map[string]interface{})
-	err = json.Unmarshal(bytes, &data)
-	return data, err
+	var result lib.LoginResult
+	err = json.Unmarshal(respBytes, &result)
+	return result, err
 }
 
 // GetWebsocket get websocket connection

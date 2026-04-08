@@ -2,10 +2,12 @@ package lib
 
 import (
 	"crypto/x509"
+	"encoding/json"
 	"fmt"
 	"hash"
 	"io/ioutil"
 	"log"
+	"net/http"
 )
 
 // HashCalculation calculat hash
@@ -25,4 +27,18 @@ func ReadCertPool(crt string) *x509.CertPool {
 		log.Fatalln("Load crt file failed.")
 	}
 	return pool
+}
+
+// HttpWriteJSON write JSON response
+func HttpWriteJSON(w http.ResponseWriter, statusCode int, data interface{}) {
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	if statusCode != 0 {
+		w.WriteHeader(statusCode)
+	}
+	bytes, err := json.Marshal(data)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	w.Write(bytes)
 }
