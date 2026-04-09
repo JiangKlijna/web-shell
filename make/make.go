@@ -22,12 +22,12 @@ const staticGenGoFile = "./server/static_gen.go"
 const staticDir = "html"
 
 var staticFiles = []string{
-	"https://unpkg.com/xterm@4.9.0/lib/xterm.js",
-	"https://unpkg.com/xterm@4.9.0/css/xterm.css",
+	"https://unpkg.com/@xterm/xterm@6.0.0/lib/xterm.js",
+	"https://unpkg.com/@xterm/xterm@6.0.0/css/xterm.css",
 
-	"https://unpkg.com/xterm-addon-fit@0.4.0/lib/xterm-addon-fit.js",
-	"https://unpkg.com/xterm-addon-webgl@0.9.0/lib/xterm-addon-webgl.js",
-	"https://unpkg.com/xterm-addon-web-links@0.4.0/lib/xterm-addon-web-links.js",
+	"https://unpkg.com/@xterm/addon-fit@0.11.0/lib/addon-fit.js",
+	"https://unpkg.com/@xterm/addon-webgl@0.19.0/lib/addon-webgl.js",
+	"https://unpkg.com/@xterm/addon-web-links@0.12.0/lib/addon-web-links.js",
 }
 
 func fileExists(path string) bool {

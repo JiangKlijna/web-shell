@@ -17,9 +17,9 @@
         return new WebSocket((location.protocol === 'https:' ? 'wss://' : 'ws://') + location.host + location.pathname + "cmd/" + path);
     };
     W.NewTerminal = function () {
-        return new Terminal({ useStyle: true, screenKeys: true });
+        return new Terminal({});
     };
-    
+
     W.sha256 = async function (text) {
         var buffer = new TextEncoder('utf-8').encode(text);
         var hash = await crypto.subtle.digest('SHA-256', buffer);
@@ -157,6 +157,7 @@ window.WebShell = function (dom) {
     term.loadAddon(fitAddon);
     term.loadAddon(webglAddon);
     term.loadAddon(webLinksAddon);
+    fitAddon.fit();
 
     this.fit = function () {
         fitAddon.fit();

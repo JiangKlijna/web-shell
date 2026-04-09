@@ -19,7 +19,7 @@ func compressStatic(m *minify.M, filename string) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	if ext != "js" && ext != "css" && ext != "html" {
+	if ext != "css" && ext != "html" {
 		return bs, nil
 	}
 	return m.Bytes(ext, bs)
