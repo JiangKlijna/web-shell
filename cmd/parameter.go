@@ -7,6 +7,7 @@ import (
 	"runtime"
 	"strconv"
 	"strings"
+	"unicode"
 
 	"github.com/jiangklijna/web-shell/client"
 	"github.com/jiangklijna/web-shell/server"
@@ -40,8 +41,8 @@ func (parms *Parameter) Init() {
 	flag.BoolVar(&(parms.HTTPS), "https", false, "enable https")
 	flag.StringVar(&(parms.Host), "H", "127.0.0.1", "connect to host")
 	flag.StringVar(&(parms.Port), "P", "2020", "listening port")
-	flag.StringVar(&(parms.Username), "u", "admin", "username")
-	flag.StringVar(&(parms.Password), "p", "webshell", "password")
+	flag.StringVar(&(parms.Username), "u", "", "username (default: admin, env: WEB_SHELL_USERNAME)")
+	flag.StringVar(&(parms.Password), "p", "", "password (default: webshell, env: WEB_SHELL_PASSWORD)")
 	flag.StringVar(&(parms.Command), "cmd", "", "command cmd or bash")
 	flag.StringVar(&(parms.ContentPath), "cp", "", "content path")
 	flag.StringVar(&(parms.CrtFile), "C", "", "crt file")
@@ -95,12 +96,44 @@ func (parms *Parameter) organize() {
 	if parms.Command == "" {
 		parms.Command = defaultCommand()
 	}
-	if parms.Username == "" {
+
+	userSetUsername := false
+	userSetPassword := false
+	flag.Visit(func(f *flag.Flag) {
+		if f.Name == "u" {
+			userSetUsername = true
+		}
+		if f.Name == "p" {
+			userSetPassword = true
+		}
+	})
+
+	if userSetUsername && parms.Username == "" {
 		parms.Username = getInput("Username")
 	}
-	if parms.Password == "" {
+	if userSetPassword && parms.Password == "" {
 		parms.Password = getInput("Password")
 	}
+
+	if !userSetUsername && parms.Username == "" {
+		parms.Username = os.Getenv("WEB_SHELL_USERNAME")
+		if parms.Username == "" {
+			parms.Username = "admin"
+		}
+	}
+	if !userSetPassword && parms.Password == "" {
+		parms.Password = os.Getenv("WEB_SHELL_PASSWORD")
+		if parms.Password == "" {
+			parms.Password = "webshell"
+		}
+	}
+
+	if parms.Server && isWeakPassword(parms.Password) {
+		println("WARNING: Password is too weak. Consider using a stronger password.")
+		println("         A strong password should have at least 9 characters and contain")
+		println("         multiple types: uppercase, lowercase, digits, special characters.")
+	}
+
 	parms.ContentPath = strings.Trim(parms.ContentPath, " ")
 	if len(parms.ContentPath) > 0 {
 		if parms.ContentPath[0] != '/' {
@@ -112,6 +145,45 @@ func (parms *Parameter) organize() {
 			os.Exit(1)
 		}
 	}
+}
+
+func isWeakPassword(password string) bool {
+	if len(password) >= 9 {
+		return false
+	}
+
+	hasUpper := false
+	hasLower := false
+	hasDigit := false
+	hasSpecial := false
+
+	for _, c := range password {
+		if unicode.IsUpper(c) {
+			hasUpper = true
+		} else if unicode.IsLower(c) {
+			hasLower = true
+		} else if unicode.IsDigit(c) {
+			hasDigit = true
+		} else if unicode.IsPunct(c) || unicode.IsSymbol(c) {
+			hasSpecial = true
+		}
+	}
+
+	types := 0
+	if hasUpper {
+		types++
+	}
+	if hasLower {
+		types++
+	}
+	if hasDigit {
+		types++
+	}
+	if hasSpecial {
+		types++
+	}
+
+	return types <= 1
 }
 
 func printUsage() {
