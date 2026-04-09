@@ -121,7 +121,7 @@ func LoginHandler(username, password string) http.Handler {
 		tokenObj := paseto.NewToken()
 		tokenObj.SetIssuedAt(time.Now())
 		tokenObj.SetNotBefore(time.Now())
-		tokenObj.SetExpiration(time.Now().Add(96 * time.Hour))
+		tokenObj.SetExpiration(time.Now().Add(24 * time.Hour))
 		tokenBytes := tokenObj.V4Encrypt(sessionKey, nil)
 
 		lib.HttpWriteJSON(w, 0, lib.LoginResult{Code: 0, Msg: "login success!", Path: tokenBytes})
