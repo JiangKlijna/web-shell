@@ -34,17 +34,17 @@ func (w *PipeLine) ReadSktAndWritePty(logChan chan string) {
 	for {
 		mt, payload, err := w.skt.ReadMessage()
 		if err != nil && err != io.EOF {
-			logChan <- fmt.Sprintf("Error ReadSktAndWritePty websocket ReadMessage failed: %s", err)
+			logChan <- fmt.Sprintf("ReadSktAndWritePty: websocket read failed: %v", err)
 			return
 		}
 		if mt != websocket.TextMessage {
-			logChan <- fmt.Sprintf("Error ReadSktAndWritePty Invalid message type %d", mt)
+			logChan <- fmt.Sprintf("ReadSktAndWritePty: invalid message type %d", mt)
 			return
 		}
 		var msg lib.Message
 		err = json.Unmarshal(payload, &msg)
 		if err != nil {
-			logChan <- fmt.Sprintf("Error ReadSktAndWritePty Invalid message %s", err)
+			logChan <- fmt.Sprintf("ReadSktAndWritePty: invalid message format: %v", err)
 			return
 		}
 		switch msg.Type {
@@ -52,28 +52,28 @@ func (w *PipeLine) ReadSktAndWritePty(logChan chan string) {
 			var size []int
 			err := json.Unmarshal(msg.Data, &size)
 			if err != nil {
-				logChan <- fmt.Sprintf("Error ReadSktAndWritePty Invalid resize message: %s", err)
+				logChan <- fmt.Sprintf("ReadSktAndWritePty: invalid resize data: %v", err)
 				return
 			}
 			err = w.pty.SetSize(size[0], size[1])
 			if err != nil {
-				logChan <- fmt.Sprintf("Error ReadSktAndWritePty pty resize failed: %s", err)
+				logChan <- fmt.Sprintf("ReadSktAndWritePty: pty resize failed: %v", err)
 				return
 			}
 		case lib.TypeData:
 			var dat string
 			err := json.Unmarshal(msg.Data, &dat)
 			if err != nil {
-				logChan <- fmt.Sprintf("Error ReadSktAndWritePty Invalid data message %s", err)
+				logChan <- fmt.Sprintf("ReadSktAndWritePty: invalid data format: %v", err)
 				return
 			}
 			_, err = w.pty.Write([]byte(dat))
 			if err != nil {
-				logChan <- fmt.Sprintf("Error ReadSktAndWritePty pty write failed: %s", err)
+				logChan <- fmt.Sprintf("ReadSktAndWritePty: pty write failed: %v", err)
 				return
 			}
 		default:
-			logChan <- fmt.Sprintf("Error ReadSktAndWritePty Invalid message type %d", mt)
+			logChan <- fmt.Sprintf("ReadSktAndWritePty: unknown message type %d", msg.Type)
 			return
 		}
 	}
@@ -85,12 +85,12 @@ func (w *PipeLine) ReadPtyAndWriteSkt(logChan chan string) {
 	for {
 		n, err := w.pty.Read(buf)
 		if err != nil {
-			logChan <- fmt.Sprintf("Error ReadPtyAndWriteSkt pty read failed: %s", err)
+			logChan <- fmt.Sprintf("ReadPtyAndWriteSkt: pty read failed: %v", err)
 			return
 		}
 		err = w.skt.WriteMessage(websocket.TextMessage, buf[:n])
 		if err != nil {
-			logChan <- fmt.Sprintf("Error ReadPtyAndWriteSkt skt write failed: %s", err)
+			logChan <- fmt.Sprintf("ReadPtyAndWriteSkt: websocket write failed: %v", err)
 			return
 		}
 	}

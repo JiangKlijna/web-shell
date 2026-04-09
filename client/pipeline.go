@@ -26,11 +26,11 @@ func (w *PipeLine) ReadSktAndWriteStdio(logChan chan string) {
 	for {
 		mt, payload, err := w.skt.ReadMessage()
 		if err != nil && err != io.EOF {
-			logChan <- fmt.Sprintf("Error ReadSktAndWriteTer websocket ReadMessage failed: %s", err)
+			logChan <- fmt.Sprintf("ReadSktAndWriteStdio: websocket read failed: %v", err)
 			return
 		}
 		if mt != websocket.TextMessage {
-			logChan <- fmt.Sprintf("Error ReadSktAndWriteTer Invalid message type %d", mt)
+			logChan <- fmt.Sprintf("ReadSktAndWriteStdio: invalid message type %d", mt)
 			return
 		}
 		os.Stdout.Write(payload)
@@ -41,7 +41,7 @@ func (w *PipeLine) ReadSktAndWriteStdio(logChan chan string) {
 func (w *PipeLine) ReadStdioAndWriteSkt(logChan chan string) {
 	err := termbox.Init()
 	if err != nil {
-		logChan <- fmt.Sprintf("Error ReadTerAndWriteSkt Init Termbox failed: %s", err)
+		logChan <- fmt.Sprintf("ReadStdioAndWriteSkt: termbox init failed: %v", err)
 		return
 	}
 	defer termbox.Close()
@@ -56,19 +56,19 @@ func (w *PipeLine) ReadStdioAndWriteSkt(logChan chan string) {
 		case termbox.EventResize:
 			msg = lib.MessageClient{Type: lib.TypeResize, Data: []termbox.Attribute{termbox.ColorDefault, termbox.ColorDefault}}
 		case termbox.EventError:
-			logChan <- fmt.Sprintf("Error ReadTerAndWriteSkt Termbox PollEvent failed: %s", err)
+			logChan <- fmt.Sprintf("ReadStdioAndWriteSkt: termbox poll event failed: %v", ev.Err)
 			return
 		default:
 			break
 		}
 		data, err := json.Marshal(msg)
 		if err != nil {
-			logChan <- fmt.Sprintf("Error ReadTerAndWriteSkt json.Marshal failed: %s", err)
+			logChan <- fmt.Sprintf("ReadStdioAndWriteSkt: json marshal failed: %v", err)
 			return
 		}
 		err = w.skt.WriteMessage(websocket.TextMessage, data)
 		if err != nil {
-			logChan <- fmt.Sprintf("Error ReadTerAndWriteSkt skt write failed: %s", err)
+			logChan <- fmt.Sprintf("ReadStdioAndWriteSkt: websocket write failed: %v", err)
 			return
 		}
 	}
