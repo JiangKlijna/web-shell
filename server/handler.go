@@ -8,6 +8,7 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"net/url"
 	"strings"
 	"time"
 
@@ -133,7 +134,17 @@ func ConnectionHandler(command string) http.Handler {
 		ReadBufferSize:  1024,
 		WriteBufferSize: 1024,
 		CheckOrigin: func(r *http.Request) bool {
-			return true
+			origin := r.Header.Get("Origin")
+			if origin == "" {
+				return true
+			}
+
+			originURL, err := url.Parse(origin)
+			if err != nil {
+				return false
+			}
+
+			return originURL.Host == r.Host
 		},
 	}
 
