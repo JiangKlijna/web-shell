@@ -129,9 +129,7 @@ func (parms *Parameter) organize() {
 	}
 
 	if parms.Server && isWeakPassword(parms.Password) {
-		println("WARNING: Password is too weak. Consider using a stronger password.")
-		println("         A strong password should have at least 9 characters and contain")
-		println("         multiple types: uppercase, lowercase, digits, special characters.")
+		println("WARNING: Weak password. Use at least 9 chars with uppercase, lowercase and digits.")
 	}
 
 	parms.ContentPath = strings.Trim(parms.ContentPath, " ")
@@ -148,14 +146,13 @@ func (parms *Parameter) organize() {
 }
 
 func isWeakPassword(password string) bool {
-	if len(password) >= 9 {
-		return false
+	if len(password) < 9 {
+		return true
 	}
 
 	hasUpper := false
 	hasLower := false
 	hasDigit := false
-	hasSpecial := false
 
 	for _, c := range password {
 		if unicode.IsUpper(c) {
@@ -164,8 +161,6 @@ func isWeakPassword(password string) bool {
 			hasLower = true
 		} else if unicode.IsDigit(c) {
 			hasDigit = true
-		} else if unicode.IsPunct(c) || unicode.IsSymbol(c) {
-			hasSpecial = true
 		}
 	}
 
@@ -179,11 +174,8 @@ func isWeakPassword(password string) bool {
 	if hasDigit {
 		types++
 	}
-	if hasSpecial {
-		types++
-	}
 
-	return types <= 1
+	return types < 3
 }
 
 func printUsage() {
