@@ -56,8 +56,16 @@ func VerifyHandler(username, password string, next http.Handler) http.Handler {
 		}
 
 		p := paseto.NewParser()
-		if _, err := p.ParseV4Local(sessionKey, token, nil); err != nil {
+		parsedToken, err := p.ParseV4Local(sessionKey, token, nil)
+		if err != nil {
 			log.Printf("Invalid token: %v", err)
+			w.WriteHeader(http.StatusForbidden)
+			return
+		}
+
+		uaHash, err := parsedToken.GetString("ua")
+		if err != nil || uaHash != lib.HashCalculation(sha256.New(), r.Header.Get("User-Agent")) {
+			log.Printf("User-Agent mismatch")
 			w.WriteHeader(http.StatusForbidden)
 			return
 		}
@@ -94,10 +102,14 @@ func LoginHandler(username, password string) http.Handler {
 
 		if req.Token != "" {
 			p := paseto.NewParser()
-			if _, err := p.ParseV4Local(sessionKey, req.Token, nil); err == nil {
-				log.Println("resuming session from stored token")
-				lib.HttpWriteJSON(w, 0, lib.LoginResult{Code: 0, Msg: "login success!", Path: req.Token})
-				return
+			parsedToken, err := p.ParseV4Local(sessionKey, req.Token, nil)
+			if err == nil {
+				uaHash, err := parsedToken.GetString("ua")
+				if err == nil && uaHash == lib.HashCalculation(sha256.New(), r.Header.Get("User-Agent")) {
+					log.Println("resuming session from stored token")
+					lib.HttpWriteJSON(w, 0, lib.LoginResult{Code: 0, Msg: "login success!", Path: req.Token})
+					return
+				}
 			}
 		}
 
@@ -115,6 +127,7 @@ func LoginHandler(username, password string) http.Handler {
 		tokenObj.SetIssuedAt(time.Now())
 		tokenObj.SetNotBefore(time.Now())
 		tokenObj.SetExpiration(time.Now().Add(24 * time.Hour))
+		tokenObj.Set("ua", lib.HashCalculation(sha256.New(), r.Header.Get("User-Agent")))
 		tokenBytes := tokenObj.V4Encrypt(sessionKey, nil)
 
 		lib.HttpWriteJSON(w, 0, lib.LoginResult{Code: 0, Msg: "login success!", Path: tokenBytes})
