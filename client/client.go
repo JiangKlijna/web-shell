@@ -3,7 +3,6 @@ package client
 import (
 	"bytes"
 	"crypto/tls"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -74,22 +73,16 @@ func (c *WebShellClient) PostRes(url string, body []byte) (*http.Response, error
 }
 
 // PostJSON http post request and parse JSON
-func (c *WebShellClient) PostJSON(url string, body []byte) (lib.LoginResult, error) {
+func (c *WebShellClient) PostJSON(url string, body []byte) ([]byte, error) {
 	res, err := c.PostRes(url, body)
 	if err != nil {
-		return lib.LoginResult{}, err
+		return nil, err
 	}
 	defer res.Body.Close()
 	if res.StatusCode < 200 || res.StatusCode >= 300 {
-		return lib.LoginResult{}, errors.New("response status is " + strconv.Itoa(res.StatusCode))
+		return nil, errors.New("response status is " + strconv.Itoa(res.StatusCode))
 	}
-	respBytes, err := io.ReadAll(res.Body)
-	if err != nil {
-		return lib.LoginResult{}, err
-	}
-	var result lib.LoginResult
-	err = json.Unmarshal(respBytes, &result)
-	return result, err
+	return io.ReadAll(res.Body)
 }
 
 // GetWebsocket get websocket connection

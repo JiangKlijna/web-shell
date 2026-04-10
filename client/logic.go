@@ -11,7 +11,7 @@ import (
 )
 
 // LoginServer get websocket path
-func LoginServer(https bool, username, password, host, port, contentpath string, post func(url string, body []byte) (lib.LoginResult, error)) (string, error) {
+func LoginServer(https bool, username, password, host, port, contentpath string, post func(url string, body []byte) ([]byte, error)) (string, error) {
 	protocol := "http"
 	if https {
 		protocol = "https"
@@ -28,8 +28,12 @@ func LoginServer(https bool, username, password, host, port, contentpath string,
 	if err != nil {
 		return "", err
 	}
-	result, err := post(LoginURL, bodyBytes)
+	respBytes, err := post(LoginURL, bodyBytes)
 	if err != nil {
+		return "", err
+	}
+	var result lib.LoginResult
+	if err := json.Unmarshal(respBytes, &result); err != nil {
 		return "", err
 	}
 	if result.Code != 0 {
