@@ -1,6 +1,6 @@
 module github.com/jiangklijna/web-shell
 
-go 1.18
+go 1.24.0
 
 require (
 	aidanwoods.dev/go-paseto v1.2.0
@@ -14,6 +14,6 @@ require (
 	github.com/creack/pty v1.1.17 // indirect
 	github.com/iamacarpet/go-winpty v1.0.2 // indirect
 	github.com/mattn/go-runewidth v0.0.23 // indirect
-	golang.org/x/crypto v0.14.0 // indirect
-	golang.org/x/sys v0.13.0 // indirect
+	golang.org/x/crypto v0.45.0 // indirect
+	golang.org/x/sys v0.38.0 // indirect
 )
