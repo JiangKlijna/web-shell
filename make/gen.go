@@ -19,10 +19,10 @@ func compressStatic(m *minify.M, filename string) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	if ext != "css" && ext != "html" {
-		return bs, nil
+	if ext == "css" || ext == "html" || strings.HasSuffix(filename, "index.js") {
+		return m.Bytes(ext, bs)
 	}
-	return m.Bytes(ext, bs)
+	return bs, nil
 }
 
 // MakeGen generate staticGenGoFile
