@@ -9,10 +9,9 @@ import (
 )
 
 // Version WebShell Server current version
-const Version = "2.0"
+const Version = "3.0"
 
-// Server Response header[Server]
-const Server = "web-shell-" + Version
+const XPoweredBy = "web-shell-" + Version
 
 // WebShellServer Main Server
 type WebShellServer struct {
