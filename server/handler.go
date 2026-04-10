@@ -4,13 +4,14 @@ import (
 	"crypto/sha256"
 	"encoding/json"
 	"fmt"
-	"github.com/jiangklijna/web-shell/lib"
 	"io"
 	"log"
 	"net/http"
 	"net/url"
 	"strings"
 	"time"
+
+	"github.com/jiangklijna/web-shell/lib"
 
 	paseto "aidanwoods.dev/go-paseto"
 	"github.com/gorilla/websocket"
@@ -67,13 +68,14 @@ func VerifyHandler(username, password string, next http.Handler) http.Handler {
 
 // LoginHandler Login interface
 func LoginHandler(username, password string) http.Handler {
-	rateLimit := lib.NewRateLimiter(time.Second)
+	loginRateLimit := lib.NewRateLimiter(10 * time.Millisecond)
+	authRateLimit := lib.NewRateLimiter(time.Second)
 
 	sha256User := lib.HashCalculation(sha256.New(), username)
 	sha256Pass := lib.HashCalculation(sha256.New(), password)
 
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if !rateLimit() {
+		if !loginRateLimit() {
 			lib.HttpWriteJSON(w, http.StatusTooManyRequests, lib.LoginResult{Code: 1, Msg: "Too many requests"})
 			return
 		}
@@ -97,6 +99,11 @@ func LoginHandler(username, password string) http.Handler {
 				lib.HttpWriteJSON(w, 0, lib.LoginResult{Code: 0, Msg: "login success!", Path: req.Token})
 				return
 			}
+		}
+
+		if !authRateLimit() {
+			lib.HttpWriteJSON(w, http.StatusTooManyRequests, lib.LoginResult{Code: 1, Msg: "Too many login attempts"})
+			return
 		}
 
 		if sha256User != req.Username || sha256Pass != req.Password {

@@ -93,14 +93,17 @@ window.WebShell = function (dom) {
 
         (async function () {
             isInput = false;
-            var token = ('web-shell-token' in sessionStorage) ? sessionStorage.getItem("web-shell-token") : '';
-            var data = await postJSON("login", { token: token });
-            if (data.code == 0) {
-                onLoginSuccess(data.path);
-            } else {
-                isInput = true;
-                term.write("Web Shell login:");
+            var token = sessionStorage.getItem("web-shell-token");
+            if (token) {
+                var data = await postJSON("login", { token: token });
+                if (data.code == 0) {
+                    onLoginSuccess(data.path);
+                    return;
+                }
+                sessionStorage.removeItem("web-shell-token");
             }
+            isInput = true;
+            term.write("Web Shell login:");
         })();
 
         var doLogin = async function () {
