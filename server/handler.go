@@ -48,21 +48,17 @@ func PostMethodHandler(next http.Handler) http.Handler {
 // VerifyHandler Login verification
 func VerifyHandler(username, password string, next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if username == "" && password == "" {
-			// authentication disabled, permit all traffic
-		} else {
-			token := strings.TrimPrefix(r.URL.Path, "/cmd/")
-			if len(token) < 10 {
-				w.WriteHeader(http.StatusNotFound)
-				return
-			}
+		token := strings.TrimPrefix(r.URL.Path, "/cmd/")
+		if len(token) < 10 {
+			w.WriteHeader(http.StatusNotFound)
+			return
+		}
 
-			p := paseto.NewParser()
-			if _, err := p.ParseV4Local(sessionKey, token, nil); err != nil {
-				log.Printf("Invalid token: %v", err)
-				w.WriteHeader(http.StatusForbidden)
-				return
-			}
+		p := paseto.NewParser()
+		if _, err := p.ParseV4Local(sessionKey, token, nil); err != nil {
+			log.Printf("Invalid token: %v", err)
+			w.WriteHeader(http.StatusForbidden)
+			return
 		}
 
 		next.ServeHTTP(w, r)
@@ -72,16 +68,6 @@ func VerifyHandler(username, password string, next http.Handler) http.Handler {
 // LoginHandler Login interface
 func LoginHandler(username, password string) http.Handler {
 	rateLimit := lib.NewRateLimiter(time.Second)
-
-	if username == "" || password == "" {
-		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			lib.HttpWriteJSON(w, 0, lib.LoginResult{
-				Code: 0,
-				Msg:  "Logged-in automatically (no authentication required)",
-				Path: "noauth--login-not-required",
-			})
-		})
-	}
 
 	sha256User := lib.HashCalculation(sha256.New(), username)
 	sha256Pass := lib.HashCalculation(sha256.New(), password)
