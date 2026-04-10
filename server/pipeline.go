@@ -55,6 +55,10 @@ func (w *PipeLine) ReadSktAndWritePty(logChan chan string) {
 				logChan <- fmt.Sprintf("ReadSktAndWritePty: invalid resize data: %v", err)
 				return
 			}
+			if len(size) != 2 || size[0] <= 0 || size[1] <= 0 {
+				logChan <- fmt.Sprintf("ReadSktAndWritePty: invalid resize values: %v", size)
+				return
+			}
 			err = w.pty.SetSize(size[0], size[1])
 			if err != nil {
 				logChan <- fmt.Sprintf("ReadSktAndWritePty: pty resize failed: %v", err)
